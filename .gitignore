@@ -1,0 +1,28 @@
+# Build outputs
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Rider
+.idea/
+*.sln.iml
+
+# OS files
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+
+# NuGet packages (restore-able)
+packages/
+!packages/build/
+
+# Generated files
+Generated Files/
