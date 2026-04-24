@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace HolosMigratorUI;
 
@@ -16,9 +17,9 @@ public partial class Form1 : Form
     public Form1()
     {
         InitializeComponent();
-        LoadEnvVariables();
         BindEvents();
         LoadSettings();
+        LoadEnvVariables();
         ApplyUiState();
         FormClosing += (_, _) => SaveSettings();
         AppendLog("UI inicializada. Configura opciones y presiona Ejecutar.");
@@ -28,8 +29,16 @@ public partial class Form1 : Form
     {
         try
         {
-            DotNetEnv.Env.Load();
-            
+            var envPath = FindEnvFile();
+            if (envPath == null)
+            {
+                AppendLog("⚠ .env no encontrado. Crea un archivo .env en la raíz del proyecto.");
+                return;
+            }
+
+            DotNetEnv.Env.Load(envPath);
+            AppendLog($"✓ .env cargado desde: {envPath}");
+
             var host = DotNetEnv.Env.GetString("SERVER_HOST");
             if (!string.IsNullOrEmpty(host)) _txtServerHost.Text = host;
 
@@ -50,8 +59,20 @@ public partial class Form1 : Form
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error cargando .env: {ex.Message}");
+            AppendLog($"✗ Error cargando .env: {ex.Message}");
         }
+    }
+
+    private static string? FindEnvFile()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir != null)
+        {
+            var candidate = Path.Combine(dir.FullName, ".env");
+            if (File.Exists(candidate)) return candidate;
+            dir = dir.Parent;
+        }
+        return null;
     }
 
     private void BindEvents()
@@ -64,6 +85,11 @@ public partial class Form1 : Form
         _btnRun.Click += async (_, _) => await RunSelectedActionAsync();
         _btnStop.Click += (_, _) => StopCurrentProcess();
         _btnOpenScripts.Click += (_, _) => OpenScriptsFolder();
+        _btnShowPassword.Click += (_, _) =>
+        {
+            _txtSshPassword.UseSystemPasswordChar = !_txtSshPassword.UseSystemPasswordChar;
+            _btnShowPassword.Text = _txtSshPassword.UseSystemPasswordChar ? "👁" : "🙈";
+        };
     }
 
     private void ApplyUiState()
@@ -270,6 +296,14 @@ public partial class Form1 : Form
             CreateNoWindow = true
         };
 
+        // El script deploy-hostinger.ps1 usa $env:HOLOS_SSH_PASSWORD para generar
+        // el askpass script que OpenSSH ejecuta — pasarlo solo como arg no es suficiente.
+        var sshPass = _txtSshPassword.Text;
+        if (!string.IsNullOrEmpty(sshPass))
+        {
+            psi.Environment["HOLOS_SSH_PASSWORD"] = sshPass;
+        }
+
         foreach (var arg in args)
         {
             psi.ArgumentList.Add(arg);
@@ -284,7 +318,11 @@ public partial class Form1 : Form
         };
         process.ErrorDataReceived += (_, e) =>
         {
-            if (!string.IsNullOrWhiteSpace(e.Data)) { AppendLog("ERR: " + e.Data); }
+            if (!string.IsNullOrWhiteSpace(e.Data))
+            {
+                var clean = AnsiRegex().Replace(e.Data, string.Empty);
+                AppendLog("ERR: " + clean);
+            }
         };
 
         _btnRun.Enabled = false;
@@ -415,6 +453,9 @@ public partial class Form1 : Form
     {
         return "'" + value.Replace("'", "''") + "'";
     }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"\x1b\[[0-9;]*[mGKHF]")]
+    private static partial Regex AnsiRegex();
 
     private void LoadSettings()
     {
