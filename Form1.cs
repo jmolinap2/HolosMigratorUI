@@ -16,11 +16,42 @@ public partial class Form1 : Form
     public Form1()
     {
         InitializeComponent();
+        LoadEnvVariables();
         BindEvents();
         LoadSettings();
         ApplyUiState();
         FormClosing += (_, _) => SaveSettings();
         AppendLog("UI inicializada. Configura opciones y presiona Ejecutar.");
+    }
+
+    private void LoadEnvVariables()
+    {
+        try
+        {
+            DotNetEnv.Env.Load();
+            
+            var host = DotNetEnv.Env.GetString("SERVER_HOST");
+            if (!string.IsNullOrEmpty(host)) _txtServerHost.Text = host;
+
+            var user = DotNetEnv.Env.GetString("SERVER_USER");
+            if (!string.IsNullOrEmpty(user)) _txtServerUser.Text = user;
+
+            var port = DotNetEnv.Env.GetInt("SSH_PORT", 0);
+            if (port > 0) _numSshPort.Value = port;
+
+            var pass = DotNetEnv.Env.GetString("SSH_PASSWORD");
+            if (!string.IsNullOrEmpty(pass)) _txtSshPassword.Text = pass;
+
+            var repo = DotNetEnv.Env.GetString("REPO_LOCAL");
+            if (!string.IsNullOrEmpty(repo)) _txtRepoPath.Text = repo;
+
+            var key = DotNetEnv.Env.GetString("SSH_KEY_PATH");
+            if (!string.IsNullOrEmpty(key)) _txtSshKeyPath.Text = key;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error cargando .env: {ex.Message}");
+        }
     }
 
     private void BindEvents()
