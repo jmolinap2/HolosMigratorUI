@@ -38,6 +38,8 @@ partial class Form1
     private TextBox _txtRemoteRepoPath;
     private TextBox _txtBranch;
     private TextBox _txtComposeFile;
+    private Label _lblGitToken;
+    private TextBox _txtGitToken;
 
     private TextBox _txtServerHost;
     private TextBox _txtServerUser;
@@ -61,6 +63,7 @@ partial class Form1
     private Button _btnRun;
     private Button _btnStop;
     private Button _btnOpenScripts;
+    private Button _btnOpenLog;
     private TextBox _txtLog;
 
     /// <summary>
@@ -87,6 +90,10 @@ partial class Form1
         _tableRoot = new TableLayoutPanel();
         _tableTop = new TableLayoutPanel();
         _grpGeneral = new GroupBox();
+        _chkSkipMigrations = new CheckBox();
+        _chkSkipPull = new CheckBox();
+        _chkSkipBuild = new CheckBox();
+        _chkSkipPublicChecks = new CheckBox();
         _tblGeneral = new TableLayoutPanel();
         _lblAction = new Label();
         _cmbAction = new ComboBox();
@@ -98,6 +105,8 @@ partial class Form1
         _txtBranch = new TextBox();
         _lblComposeFile = new Label();
         _txtComposeFile = new TextBox();
+        _lblGitToken = new Label();
+        _txtGitToken = new TextBox();
         _grpSsh = new GroupBox();
         _tblSsh = new TableLayoutPanel();
         _lblServerHost = new Label();
@@ -120,25 +129,22 @@ partial class Form1
         _grpOps = new GroupBox();
         _tblOps = new TableLayoutPanel();
         _lblDeployTarget = new Label();
+        _cmbDeployTarget = new ComboBox();
         _lblMigrationMode = new Label();
+        _cmbMigrationMode = new ComboBox();
         _lblTenant = new Label();
-        _chkSkipPull = new CheckBox();
-        _chkSkipMigrations = new CheckBox();
-        _chkSkipBuild = new CheckBox();
-        _chkSkipPublicChecks = new CheckBox();
+        _txtTenant = new TextBox();
+        _panelSkipFlags = new FlowLayoutPanel();
         _grpLog = new GroupBox();
         _txtLog = new TextBox();
-        _panelActions = new FlowLayoutPanel();
         _btnRun = new Button();
-        _btnStop = new Button();
         _btnOpenScripts = new Button();
+        _btnOpenLog = new Button();
+        _btnStop = new Button();
+        _panelActions = new FlowLayoutPanel();
         _panelHeader = new Panel();
         _flpHeaderActions = new FlowLayoutPanel();
         _lblAppTitle = new Label();
-        _panelSkipFlags = new FlowLayoutPanel();
-        _txtTenant = new TextBox();
-        _cmbMigrationMode = new ComboBox();
-        _cmbDeployTarget = new ComboBox();
         _tableRoot.SuspendLayout();
         _tableTop.SuspendLayout();
         _grpGeneral.SuspendLayout();
@@ -151,6 +157,7 @@ partial class Form1
         _tblOps.SuspendLayout();
         _grpLog.SuspendLayout();
         _panelHeader.SuspendLayout();
+        _flpHeaderActions.SuspendLayout();
         SuspendLayout();
         // 
         // _tableRoot
@@ -167,7 +174,7 @@ partial class Form1
         _tableRoot.RowCount = 2;
         _tableRoot.RowStyles.Add(new RowStyle(SizeType.Percent, 45F));
         _tableRoot.RowStyles.Add(new RowStyle(SizeType.Percent, 55F));
-        _tableRoot.Size = new Size(1829, 1303);
+        _tableRoot.Size = new Size(1829, 986);
         _tableRoot.TabIndex = 0;
         // 
         // _tableTop
@@ -185,16 +192,14 @@ partial class Form1
         _tableTop.Name = "_tableTop";
         _tableTop.RowCount = 1;
         _tableTop.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        _tableTop.Size = new Size(1781, 561);
+        _tableTop.Size = new Size(1781, 419);
         _tableTop.TabIndex = 0;
         // 
         // _grpGeneral
         // 
         _grpGeneral.Controls.Add(_chkSkipMigrations);
         _grpGeneral.Controls.Add(_chkSkipPull);
-        _grpGeneral.Controls.Add(_btnRun);
         _grpGeneral.Controls.Add(_chkSkipBuild);
-        _grpGeneral.Controls.Add(_btnOpenScripts);
         _grpGeneral.Controls.Add(_chkSkipPublicChecks);
         _grpGeneral.Controls.Add(_tblGeneral);
         _grpGeneral.Dock = DockStyle.Fill;
@@ -203,10 +208,50 @@ partial class Form1
         _grpGeneral.Margin = new Padding(9, 10, 9, 10);
         _grpGeneral.Name = "_grpGeneral";
         _grpGeneral.Padding = new Padding(10, 12, 10, 10);
-        _grpGeneral.Size = new Size(587, 541);
+        _grpGeneral.Size = new Size(587, 399);
         _grpGeneral.TabIndex = 0;
         _grpGeneral.TabStop = false;
         _grpGeneral.Text = "General";
+        // 
+        // _chkSkipMigrations
+        // 
+        _chkSkipMigrations.AutoSize = true;
+        _chkSkipMigrations.Location = new Point(282, 406);
+        _chkSkipMigrations.Margin = new Padding(0, 4, 16, 4);
+        _chkSkipMigrations.Name = "_chkSkipMigrations";
+        _chkSkipMigrations.Size = new Size(189, 29);
+        _chkSkipMigrations.TabIndex = 1;
+        _chkSkipMigrations.Text = "Omitir migraciones";
+        // 
+        // _chkSkipPull
+        // 
+        _chkSkipPull.AutoSize = true;
+        _chkSkipPull.Location = new Point(28, 459);
+        _chkSkipPull.Margin = new Padding(0, 4, 16, 4);
+        _chkSkipPull.Name = "_chkSkipPull";
+        _chkSkipPull.Size = new Size(122, 29);
+        _chkSkipPull.TabIndex = 0;
+        _chkSkipPull.Text = "Omitir pull";
+        // 
+        // _chkSkipBuild
+        // 
+        _chkSkipBuild.AutoSize = true;
+        _chkSkipBuild.Location = new Point(282, 459);
+        _chkSkipBuild.Margin = new Padding(0, 4, 16, 4);
+        _chkSkipBuild.Name = "_chkSkipBuild";
+        _chkSkipBuild.Size = new Size(133, 29);
+        _chkSkipBuild.TabIndex = 2;
+        _chkSkipBuild.Text = "Omitir build";
+        // 
+        // _chkSkipPublicChecks
+        // 
+        _chkSkipPublicChecks.AutoSize = true;
+        _chkSkipPublicChecks.Location = new Point(28, 406);
+        _chkSkipPublicChecks.Margin = new Padding(0, 4, 0, 4);
+        _chkSkipPublicChecks.Name = "_chkSkipPublicChecks";
+        _chkSkipPublicChecks.Size = new Size(217, 29);
+        _chkSkipPublicChecks.TabIndex = 3;
+        _chkSkipPublicChecks.Text = "Omitir checks públicos";
         // 
         // _tblGeneral
         // 
@@ -225,18 +270,21 @@ partial class Form1
         _tblGeneral.Controls.Add(_txtBranch, 1, 3);
         _tblGeneral.Controls.Add(_lblComposeFile, 0, 4);
         _tblGeneral.Controls.Add(_txtComposeFile, 1, 4);
+        _tblGeneral.Controls.Add(_lblGitToken, 0, 5);
+        _tblGeneral.Controls.Add(_txtGitToken, 1, 5);
         _tblGeneral.Dock = DockStyle.Top;
         _tblGeneral.ForeColor = Color.FromArgb(55, 65, 81);
         _tblGeneral.Location = new Point(10, 36);
         _tblGeneral.Margin = new Padding(4, 5, 4, 5);
         _tblGeneral.Name = "_tblGeneral";
-        _tblGeneral.RowCount = 5;
+        _tblGeneral.RowCount = 6;
         _tblGeneral.RowStyles.Add(new RowStyle());
         _tblGeneral.RowStyles.Add(new RowStyle());
         _tblGeneral.RowStyles.Add(new RowStyle());
         _tblGeneral.RowStyles.Add(new RowStyle());
         _tblGeneral.RowStyles.Add(new RowStyle());
-        _tblGeneral.Size = new Size(567, 197);
+        _tblGeneral.RowStyles.Add(new RowStyle());
+        _tblGeneral.Size = new Size(567, 236);
         _tblGeneral.TabIndex = 0;
         // 
         // _lblAction
@@ -345,6 +393,27 @@ partial class Form1
         _txtComposeFile.TabIndex = 9;
         _txtComposeFile.Text = "docker-compose.hostinger.yml";
         // 
+        // _lblGitToken
+        // 
+        _lblGitToken.Anchor = AnchorStyles.Left;
+        _lblGitToken.AutoSize = true;
+        _lblGitToken.Location = new Point(4, 204);
+        _lblGitToken.Margin = new Padding(4, 6, 4, 6);
+        _lblGitToken.Name = "_lblGitToken";
+        _lblGitToken.Size = new Size(123, 25);
+        _lblGitToken.TabIndex = 10;
+        _lblGitToken.Text = "Token GitHub:";
+        // 
+        // _txtGitToken
+        // 
+        _txtGitToken.Dock = DockStyle.Fill;
+        _txtGitToken.Location = new Point(247, 201);
+        _txtGitToken.Margin = new Padding(4);
+        _txtGitToken.Name = "_txtGitToken";
+        _txtGitToken.Size = new Size(316, 31);
+        _txtGitToken.TabIndex = 11;
+        _txtGitToken.UseSystemPasswordChar = true;
+        // 
         // _grpSsh
         // 
         _grpSsh.Controls.Add(_tblSsh);
@@ -354,7 +423,7 @@ partial class Form1
         _grpSsh.Margin = new Padding(9, 10, 9, 10);
         _grpSsh.Name = "_grpSsh";
         _grpSsh.Padding = new Padding(10, 12, 10, 10);
-        _grpSsh.Size = new Size(623, 541);
+        _grpSsh.Size = new Size(623, 399);
         _grpSsh.TabIndex = 1;
         _grpSsh.TabStop = false;
         _grpSsh.Text = "SSH";
@@ -509,9 +578,10 @@ partial class Form1
         // _txtSshPassword
         // 
         _txtSshPassword.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-        _txtSshPassword.Location = new Point(0, 0);
+        _txtSshPassword.Location = new Point(3, -1);
+        _txtSshPassword.Multiline = true;
         _txtSshPassword.Name = "_txtSshPassword";
-        _txtSshPassword.Size = new Size(351, 31);
+        _txtSshPassword.Size = new Size(307, 0);
         _txtSshPassword.TabIndex = 0;
         _txtSshPassword.UseSystemPasswordChar = true;
         // 
@@ -590,7 +660,7 @@ partial class Form1
         _grpOps.Margin = new Padding(9, 10, 9, 10);
         _grpOps.Name = "_grpOps";
         _grpOps.Padding = new Padding(10, 12, 10, 10);
-        _grpOps.Size = new Size(517, 541);
+        _grpOps.Size = new Size(517, 399);
         _grpOps.TabIndex = 1;
         _grpOps.TabStop = false;
         _grpOps.Text = "Opciones de despliegue y migración";
@@ -633,6 +703,17 @@ partial class Form1
         _lblDeployTarget.TabIndex = 0;
         _lblDeployTarget.Text = "Objetivo deploy:";
         // 
+        // _cmbDeployTarget
+        // 
+        _cmbDeployTarget.Dock = DockStyle.Fill;
+        _cmbDeployTarget.DropDownStyle = ComboBoxStyle.DropDownList;
+        _cmbDeployTarget.Items.AddRange(new object[] { "Both - Front + API", "Backend - Solo API", "Frontend - Solo Front" });
+        _cmbDeployTarget.Location = new Point(144, 4);
+        _cmbDeployTarget.Margin = new Padding(4);
+        _cmbDeployTarget.Name = "_cmbDeployTarget";
+        _cmbDeployTarget.Size = new Size(349, 33);
+        _cmbDeployTarget.TabIndex = 1;
+        // 
         // _lblMigrationMode
         // 
         _lblMigrationMode.Anchor = AnchorStyles.Left;
@@ -643,6 +724,17 @@ partial class Form1
         _lblMigrationMode.Size = new Size(95, 50);
         _lblMigrationMode.TabIndex = 2;
         _lblMigrationMode.Text = "Modo migración:";
+        // 
+        // _cmbMigrationMode
+        // 
+        _cmbMigrationMode.Dock = DockStyle.Fill;
+        _cmbMigrationMode.DropDownStyle = ComboBoxStyle.DropDownList;
+        _cmbMigrationMode.Items.AddRange(new object[] { "B - Host + todos los tenants", "H - Solo Host", "T - Solo todos los tenants", "U - Un tenant especifico", "N - Ninguna" });
+        _cmbMigrationMode.Location = new Point(144, 66);
+        _cmbMigrationMode.Margin = new Padding(4);
+        _cmbMigrationMode.Name = "_cmbMigrationMode";
+        _cmbMigrationMode.Size = new Size(349, 33);
+        _cmbMigrationMode.TabIndex = 3;
         // 
         // _lblTenant
         // 
@@ -655,57 +747,36 @@ partial class Form1
         _lblTenant.TabIndex = 4;
         _lblTenant.Text = "Tenant (solo U):";
         // 
-        // _chkSkipPull
+        // _txtTenant
         // 
-        _chkSkipPull.AutoSize = true;
-        _chkSkipPull.Location = new Point(28, 480);
-        _chkSkipPull.Margin = new Padding(0, 4, 16, 4);
-        _chkSkipPull.Name = "_chkSkipPull";
-        _chkSkipPull.Size = new Size(122, 29);
-        _chkSkipPull.TabIndex = 0;
-        _chkSkipPull.Text = "Omitir pull";
+        _txtTenant.Dock = DockStyle.Fill;
+        _txtTenant.Location = new Point(144, 128);
+        _txtTenant.Margin = new Padding(4);
+        _txtTenant.Name = "_txtTenant";
+        _txtTenant.Size = new Size(349, 31);
+        _txtTenant.TabIndex = 5;
         // 
-        // _chkSkipMigrations
+        // _panelSkipFlags
         // 
-        _chkSkipMigrations.AutoSize = true;
-        _chkSkipMigrations.Location = new Point(282, 406);
-        _chkSkipMigrations.Margin = new Padding(0, 4, 16, 4);
-        _chkSkipMigrations.Name = "_chkSkipMigrations";
-        _chkSkipMigrations.Size = new Size(189, 29);
-        _chkSkipMigrations.TabIndex = 1;
-        _chkSkipMigrations.Text = "Omitir migraciones";
-        // 
-        // _chkSkipBuild
-        // 
-        _chkSkipBuild.AutoSize = true;
-        _chkSkipBuild.Location = new Point(28, 443);
-        _chkSkipBuild.Margin = new Padding(0, 4, 16, 4);
-        _chkSkipBuild.Name = "_chkSkipBuild";
-        _chkSkipBuild.Size = new Size(133, 29);
-        _chkSkipBuild.TabIndex = 2;
-        _chkSkipBuild.Text = "Omitir build";
-        // 
-        // _chkSkipPublicChecks
-        // 
-        _chkSkipPublicChecks.AutoSize = true;
-        _chkSkipPublicChecks.Location = new Point(28, 406);
-        _chkSkipPublicChecks.Margin = new Padding(0, 4, 0, 4);
-        _chkSkipPublicChecks.Name = "_chkSkipPublicChecks";
-        _chkSkipPublicChecks.Size = new Size(217, 29);
-        _chkSkipPublicChecks.TabIndex = 3;
-        _chkSkipPublicChecks.Text = "Omitir checks públicos";
+        _panelSkipFlags.AutoSize = true;
+        _panelSkipFlags.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+        _panelSkipFlags.Dock = DockStyle.Fill;
+        _panelSkipFlags.Location = new Point(140, 190);
+        _panelSkipFlags.Margin = new Padding(0, 4, 0, 4);
+        _panelSkipFlags.Name = "_panelSkipFlags";
+        _panelSkipFlags.Size = new Size(357, 1);
+        _panelSkipFlags.TabIndex = 6;
         // 
         // _grpLog
         // 
-        _grpLog.Controls.Add(_btnStop);
         _grpLog.Controls.Add(_txtLog);
         _grpLog.Dock = DockStyle.Fill;
         _grpLog.ForeColor = Color.FromArgb(37, 99, 235);
-        _grpLog.Location = new Point(29, 597);
+        _grpLog.Location = new Point(29, 455);
         _grpLog.Margin = new Padding(9, 10, 9, 10);
         _grpLog.Name = "_grpLog";
         _grpLog.Padding = new Padding(10, 12, 10, 10);
-        _grpLog.Size = new Size(1771, 680);
+        _grpLog.Size = new Size(1771, 505);
         _grpLog.TabIndex = 3;
         _grpLog.TabStop = false;
         _grpLog.Text = "Salida en tiempo real";
@@ -722,18 +793,8 @@ partial class Form1
         _txtLog.Name = "_txtLog";
         _txtLog.ReadOnly = true;
         _txtLog.ScrollBars = ScrollBars.Both;
-        _txtLog.Size = new Size(1751, 634);
+        _txtLog.Size = new Size(1751, 459);
         _txtLog.TabIndex = 0;
-        // 
-        // _panelActions
-        // 
-        _panelActions.AutoSize = true;
-        _panelActions.Dock = DockStyle.Top;
-        _panelActions.Location = new Point(29, 888);
-        _panelActions.Margin = new Padding(9, 8, 9, 8);
-        _panelActions.Name = "_panelActions";
-        _panelActions.Size = new Size(200, 100);
-        _panelActions.TabIndex = 2;
         // 
         // _btnRun
         // 
@@ -743,13 +804,45 @@ partial class Form1
         _btnRun.FlatStyle = FlatStyle.Flat;
         _btnRun.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
         _btnRun.ForeColor = Color.White;
-        _btnRun.Location = new Point(47, 322);
+        _btnRun.Location = new Point(280, 20);
         _btnRun.Margin = new Padding(0, 10, 6, 10);
         _btnRun.Name = "_btnRun";
         _btnRun.Size = new Size(140, 44);
         _btnRun.TabIndex = 0;
         _btnRun.Text = "▶  Ejecutar";
         _btnRun.UseVisualStyleBackColor = false;
+        // 
+        // _btnOpenScripts
+        // 
+        _btnOpenScripts.BackColor = Color.FromArgb(71, 85, 105);
+        _btnOpenScripts.Cursor = Cursors.Hand;
+        _btnOpenScripts.FlatAppearance.BorderSize = 0;
+        _btnOpenScripts.FlatStyle = FlatStyle.Flat;
+        _btnOpenScripts.Font = new Font("Segoe UI", 10F);
+        _btnOpenScripts.ForeColor = Color.White;
+        _btnOpenScripts.Location = new Point(130, 20);
+        _btnOpenScripts.Margin = new Padding(0, 10, 10, 10);
+        _btnOpenScripts.Name = "_btnOpenScripts";
+        _btnOpenScripts.Size = new Size(140, 44);
+        _btnOpenScripts.TabIndex = 2;
+        _btnOpenScripts.Text = "📂  Scripts";
+        _btnOpenScripts.UseVisualStyleBackColor = false;
+        // 
+        // _btnOpenLog
+        // 
+        _btnOpenLog.BackColor = Color.FromArgb(30, 58, 70);
+        _btnOpenLog.Cursor = Cursors.Hand;
+        _btnOpenLog.FlatAppearance.BorderSize = 0;
+        _btnOpenLog.FlatStyle = FlatStyle.Flat;
+        _btnOpenLog.Font = new Font("Segoe UI", 10F);
+        _btnOpenLog.ForeColor = Color.FromArgb(100, 220, 255);
+        _btnOpenLog.Location = new Point(0, 20);
+        _btnOpenLog.Margin = new Padding(0, 10, 10, 10);
+        _btnOpenLog.Name = "_btnOpenLog";
+        _btnOpenLog.Size = new Size(120, 44);
+        _btnOpenLog.TabIndex = 3;
+        _btnOpenLog.Text = "📋  Log";
+        _btnOpenLog.UseVisualStyleBackColor = false;
         // 
         // _btnStop
         // 
@@ -760,7 +853,7 @@ partial class Form1
         _btnStop.FlatStyle = FlatStyle.Flat;
         _btnStop.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
         _btnStop.ForeColor = Color.White;
-        _btnStop.Location = new Point(1583, 46);
+        _btnStop.Location = new Point(426, 20);
         _btnStop.Margin = new Padding(0, 10, 6, 10);
         _btnStop.Name = "_btnStop";
         _btnStop.Size = new Size(140, 44);
@@ -768,21 +861,15 @@ partial class Form1
         _btnStop.Text = "■  Detener";
         _btnStop.UseVisualStyleBackColor = false;
         // 
-        // _btnOpenScripts
+        // _panelActions
         // 
-        _btnOpenScripts.BackColor = Color.FromArgb(71, 85, 105);
-        _btnOpenScripts.Cursor = Cursors.Hand;
-        _btnOpenScripts.FlatAppearance.BorderSize = 0;
-        _btnOpenScripts.FlatStyle = FlatStyle.Flat;
-        _btnOpenScripts.Font = new Font("Segoe UI", 10F);
-        _btnOpenScripts.ForeColor = Color.White;
-        _btnOpenScripts.Location = new Point(47, 261);
-        _btnOpenScripts.Margin = new Padding(0, 10, 10, 10);
-        _btnOpenScripts.Name = "_btnOpenScripts";
-        _btnOpenScripts.Size = new Size(140, 44);
-        _btnOpenScripts.TabIndex = 2;
-        _btnOpenScripts.Text = "📂  Scripts";
-        _btnOpenScripts.UseVisualStyleBackColor = false;
+        _panelActions.AutoSize = true;
+        _panelActions.Dock = DockStyle.Top;
+        _panelActions.Location = new Point(29, 888);
+        _panelActions.Margin = new Padding(9, 8, 9, 8);
+        _panelActions.Name = "_panelActions";
+        _panelActions.Size = new Size(200, 100);
+        _panelActions.TabIndex = 2;
         // 
         // _panelHeader
         // 
@@ -800,11 +887,15 @@ partial class Form1
         // 
         _flpHeaderActions.AutoSize = true;
         _flpHeaderActions.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+        _flpHeaderActions.Controls.Add(_btnOpenLog);
+        _flpHeaderActions.Controls.Add(_btnOpenScripts);
+        _flpHeaderActions.Controls.Add(_btnRun);
+        _flpHeaderActions.Controls.Add(_btnStop);
         _flpHeaderActions.Dock = DockStyle.Right;
-        _flpHeaderActions.Location = new Point(1817, 0);
+        _flpHeaderActions.Location = new Point(1245, 0);
         _flpHeaderActions.Name = "_flpHeaderActions";
         _flpHeaderActions.Padding = new Padding(0, 10, 12, 10);
-        _flpHeaderActions.Size = new Size(12, 64);
+        _flpHeaderActions.Size = new Size(584, 64);
         _flpHeaderActions.TabIndex = 2;
         _flpHeaderActions.WrapContents = false;
         // 
@@ -821,59 +912,17 @@ partial class Form1
         _lblAppTitle.Text = "Holos Migrator";
         _lblAppTitle.TextAlign = ContentAlignment.MiddleLeft;
         // 
-        // _panelSkipFlags
-        // 
-        _panelSkipFlags.AutoSize = true;
-        _panelSkipFlags.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-        _panelSkipFlags.Dock = DockStyle.Fill;
-        _panelSkipFlags.Location = new Point(140, 190);
-        _panelSkipFlags.Margin = new Padding(0, 4, 0, 4);
-        _panelSkipFlags.Name = "_panelSkipFlags";
-        _panelSkipFlags.Size = new Size(357, 1);
-        _panelSkipFlags.TabIndex = 6;
-        // 
-        // _txtTenant
-        // 
-        _txtTenant.Dock = DockStyle.Fill;
-        _txtTenant.Location = new Point(144, 128);
-        _txtTenant.Margin = new Padding(4);
-        _txtTenant.Name = "_txtTenant";
-        _txtTenant.Size = new Size(349, 31);
-        _txtTenant.TabIndex = 5;
-        // 
-        // _cmbMigrationMode
-        // 
-        _cmbMigrationMode.Dock = DockStyle.Fill;
-        _cmbMigrationMode.DropDownStyle = ComboBoxStyle.DropDownList;
-        _cmbMigrationMode.Items.AddRange(new object[] { "B - Host + todos los tenants", "H - Solo Host", "T - Solo todos los tenants", "U - Un tenant especifico", "N - Ninguna" });
-        _cmbMigrationMode.Location = new Point(144, 66);
-        _cmbMigrationMode.Margin = new Padding(4);
-        _cmbMigrationMode.Name = "_cmbMigrationMode";
-        _cmbMigrationMode.Size = new Size(349, 33);
-        _cmbMigrationMode.TabIndex = 3;
-        // 
-        // _cmbDeployTarget
-        // 
-        _cmbDeployTarget.Dock = DockStyle.Fill;
-        _cmbDeployTarget.DropDownStyle = ComboBoxStyle.DropDownList;
-        _cmbDeployTarget.Items.AddRange(new object[] { "Both - Front + API", "Backend - Solo API", "Frontend - Solo Front" });
-        _cmbDeployTarget.Location = new Point(144, 4);
-        _cmbDeployTarget.Margin = new Padding(4);
-        _cmbDeployTarget.Name = "_cmbDeployTarget";
-        _cmbDeployTarget.Size = new Size(349, 33);
-        _cmbDeployTarget.TabIndex = 1;
-        // 
         // Form1
         // 
         AutoScaleDimensions = new SizeF(10F, 25F);
         AutoScaleMode = AutoScaleMode.Font;
         AutoScroll = true;
         BackColor = Color.FromArgb(240, 242, 248);
-        ClientSize = new Size(1829, 1367);
+        ClientSize = new Size(1829, 1050);
         Controls.Add(_tableRoot);
         Controls.Add(_panelHeader);
         Margin = new Padding(4, 5, 4, 5);
-        MinimumSize = new Size(1705, 1006);
+        MinimumSize = new Size(1000, 700);
         Name = "Form1";
         StartPosition = FormStartPosition.CenterScreen;
         Text = "Holos Migrator";
@@ -898,6 +947,7 @@ partial class Form1
         _grpLog.PerformLayout();
         _panelHeader.ResumeLayout(false);
         _panelHeader.PerformLayout();
+        _flpHeaderActions.ResumeLayout(false);
         ResumeLayout(false);
     }
 

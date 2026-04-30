@@ -17,12 +17,28 @@ public partial class Form1 : Form
     public Form1()
     {
         InitializeComponent();
+        FixDesignerBugs();
         BindEvents();
         LoadSettings();
         LoadEnvVariables();
         ApplyUiState();
+        ConfigureCyberpunkUI();
         FormClosing += (_, _) => SaveSettings();
-        AppendLog("UI inicializada. Configura opciones y presiona Ejecutar.");
+        AppendLog("✅ Sistema listo. Ingresa tu Password SSH y presiona '▶ EJECUTAR' arriba a la derecha.");
+    }
+
+    private void FixDesignerBugs()
+    {
+        // Forzar visibilidad y tamaño de textboxes rotos por el diseñador de WinForms
+        _txtSshPassword.Multiline = false;
+        _txtSshPassword.Size = new Size(_panelSshPassword.Width - 40, 25);
+        _txtSshPassword.Location = new Point(5, 5);
+
+        // Seleccionar el primer elemento en todos los ComboBoxes para que no aparezcan vacíos
+        if (_cmbAction.Items.Count > 0 && _cmbAction.SelectedIndex == -1) _cmbAction.SelectedIndex = 0;
+        if (_cmbSshAuth.Items.Count > 0 && _cmbSshAuth.SelectedIndex == -1) _cmbSshAuth.SelectedIndex = 0;
+        if (_cmbDeployTarget.Items.Count > 0 && _cmbDeployTarget.SelectedIndex == -1) _cmbDeployTarget.SelectedIndex = 0;
+        if (_cmbMigrationMode.Items.Count > 0 && _cmbMigrationMode.SelectedIndex == -1) _cmbMigrationMode.SelectedIndex = 0;
     }
 
     private void LoadEnvVariables()
@@ -56,6 +72,9 @@ public partial class Form1 : Form
 
             var key = DotNetEnv.Env.GetString("SSH_KEY_PATH");
             if (!string.IsNullOrEmpty(key)) _txtSshKeyPath.Text = key;
+
+            var gitToken = DotNetEnv.Env.GetString("GIT_TOKEN");
+            if (!string.IsNullOrEmpty(gitToken)) _txtGitToken.Text = gitToken;
         }
         catch (Exception ex)
         {
@@ -85,6 +104,7 @@ public partial class Form1 : Form
         _btnRun.Click += async (_, _) => await RunSelectedActionAsync();
         _btnStop.Click += (_, _) => StopCurrentProcess();
         _btnOpenScripts.Click += (_, _) => OpenScriptsFolder();
+        _btnOpenLog.Click += (_, _) => OpenLogFile();
         _btnShowPassword.Click += (_, _) =>
         {
             _txtSshPassword.UseSystemPasswordChar = !_txtSshPassword.UseSystemPasswordChar;
@@ -102,7 +122,12 @@ public partial class Form1 : Form
 
         _cmbDeployTarget.Enabled = action == "Deploy completo";
         _cmbMigrationMode.Enabled = !skippingMigrations;
-        _txtTenant.Enabled = migrationMode == "U" && !skippingMigrations;
+        
+        bool tenantActive = migrationMode == "U" && !skippingMigrations;
+        _txtTenant.Enabled = tenantActive;
+        _txtTenant.PlaceholderText = tenantActive ? "Escribe el nombre del tenant..." : "(Habilitado solo si modo es 'U')";
+        _txtTenant.BackColor = tenantActive ? Color.FromArgb(9, 9, 11) : Color.FromArgb(20, 20, 25);
+
         _chkSkipPull.Enabled = action == "Deploy completo";
         _chkSkipMigrations.Enabled = action == "Deploy completo";
         _chkSkipBuild.Enabled = action == "Deploy completo";
@@ -237,6 +262,13 @@ public partial class Form1 : Form
             args.Add("-DeployTarget");
             args.Add(GetSelectedDeployTarget());
 
+            var gitToken = _txtGitToken.Text.Trim();
+            if (!string.IsNullOrWhiteSpace(gitToken))
+            {
+                args.Add("-GitToken");
+                args.Add(gitToken);
+            }
+
             if (_chkSkipPull.Checked) { args.Add("-SkipPull"); }
             if (_chkSkipMigrations.Checked) { args.Add("-SkipMigrations"); }
             if (_chkSkipBuild.Checked) { args.Add("-SkipBuild"); }
@@ -309,33 +341,39 @@ public partial class Form1 : Form
             psi.ArgumentList.Add(arg);
         }
 
+        // Log del comando completo (sin contraseña)
+        var safeArgs = args.Select(a =>
+            (a == sshPass && !string.IsNullOrEmpty(sshPass)) ? "***" : a);
+        AppendLog($"CMD: pwsh {string.Join(" ", safeArgs.Select(a => a.Contains(' ') ? $"\"{a}\"" : a))}");
+
         var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
         _runningProcess = process;
 
         process.OutputDataReceived += (_, e) =>
         {
-            if (!string.IsNullOrWhiteSpace(e.Data)) { AppendLog(e.Data); }
+            if (e.Data != null) { AppendLog(e.Data); }
         };
         process.ErrorDataReceived += (_, e) =>
         {
-            if (!string.IsNullOrWhiteSpace(e.Data))
+            if (e.Data != null)
             {
                 var clean = AnsiRegex().Replace(e.Data, string.Empty);
-                AppendLog("ERR: " + clean);
+                if (!string.IsNullOrWhiteSpace(clean))
+                    AppendLog("ERR: " + clean);
             }
         };
 
         _btnRun.Enabled = false;
         _btnStop.Enabled = true;
 
-        AppendLog("Ejecutando proceso...");
+        AppendLog($"════════ INICIO [{DateTime.Now:yyyy-MM-dd HH:mm:ss}] ════════");
         process.Start();
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
         await process.WaitForExitAsync();
 
-        AppendLog($"Proceso finalizado con código: {process.ExitCode}");
+        AppendLog($"════════ FIN código={process.ExitCode} [{DateTime.Now:HH:mm:ss}] ════════");
         _runningProcess = null;
         _btnRun.Enabled = true;
         _btnStop.Enabled = false;
@@ -438,6 +476,9 @@ public partial class Form1 : Form
         return value.Trim();
     }
 
+    private string LogFilePath =>
+        Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "migrator_logs.txt"));
+
     private void AppendLog(string message)
     {
         if (InvokeRequired)
@@ -446,7 +487,34 @@ public partial class Form1 : Form
             return;
         }
 
-        _txtLog.AppendText($"[{DateTime.Now:HH:mm:ss}] {message}{Environment.NewLine}");
+        string logLine = $"[{DateTime.Now:HH:mm:ss}] {message}";
+        _txtLog.AppendText(logLine + Environment.NewLine);
+
+        try
+        {
+            var logDir = Path.GetDirectoryName(LogFilePath)!;
+            Directory.CreateDirectory(logDir);
+            File.AppendAllText(LogFilePath, logLine + Environment.NewLine, Encoding.UTF8);
+        }
+        catch { /* no bloquear UI si hay problema de permisos */ }
+    }
+
+    private void OpenLogFile()
+    {
+        try
+        {
+            var path = LogFilePath;
+            if (!File.Exists(path))
+            {
+                MessageBox.Show("Todavía no hay archivo de log generado.\nEjecuta al menos una acción primero.", "Log no encontrado", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 
     private static string QuoteForCommandLine(string value)
@@ -522,6 +590,195 @@ public partial class Form1 : Form
         var protectedBytes = Convert.FromBase64String(encryptedBase64);
         var bytes = ProtectedData.Unprotect(protectedBytes, null, DataProtectionScope.CurrentUser);
         return Encoding.UTF8.GetString(bytes);
+    }
+
+    private bool _advancedVisible = false;
+
+    private void ConfigureCyberpunkUI()
+    {
+        // Paleta Cyberpunk
+        var bgDark = Color.FromArgb(9, 9, 11);
+        var panelDark = Color.FromArgb(18, 18, 23);
+        var neonGreen = Color.FromArgb(0, 255, 65);
+        var neonCyan = Color.FromArgb(0, 255, 255);
+        var terminalFont = new Font("Consolas", 10F, FontStyle.Regular);
+        var titleFont = new Font("Consolas", 11F, FontStyle.Bold);
+
+        this.BackColor = bgDark;
+
+        foreach (var grp in new[] { _grpGeneral, _grpSsh, _grpOps })
+        {
+            if (grp == null) continue;
+            grp.BackColor = panelDark;
+            grp.FlatStyle = FlatStyle.Flat;
+            grp.Font = titleFont;
+            grp.ForeColor = neonCyan;
+            grp.Padding = new Padding(15);
+        }
+
+        foreach (var tbl in new[] { _tblGeneral, _tblSsh, _tblOps })
+        {
+            if (tbl == null) continue;
+            tbl.Font = terminalFont;
+            tbl.BackColor = panelDark;
+            tbl.ForeColor = neonGreen;
+        }
+
+        if (_panelHeader != null)
+        {
+            _panelHeader.BackColor = Color.FromArgb(5, 5, 5);
+        }
+        if (_lblAppTitle != null)
+        {
+            _lblAppTitle.ForeColor = neonGreen;
+            _lblAppTitle.Font = new Font("Consolas", 16F, FontStyle.Bold);
+            _lblAppTitle.Text = "> HOLOS_MIGRATOR_SYS_CTL";
+        }
+
+        foreach (Control c in this.Controls) { ApplyCyberpunkKids(c, bgDark, panelDark, neonGreen, neonCyan); }
+
+        var btnAdvanced = new Button
+        {
+            Text = "[ SYS.ADVANCED ]",
+            BackColor = panelDark,
+            ForeColor = neonCyan,
+            FlatStyle = FlatStyle.Flat,
+            Font = titleFont,
+            AutoSize = true,
+            MinimumSize = new Size(160, 44),
+            Margin = new Padding(0, 10, 10, 10),
+            Cursor = Cursors.Hand
+        };
+        btnAdvanced.FlatAppearance.BorderColor = neonCyan;
+        btnAdvanced.FlatAppearance.BorderSize = 1;
+
+        btnAdvanced.Click += (_, _) =>
+        {
+            _advancedVisible = !_advancedVisible;
+            btnAdvanced.BackColor = _advancedVisible ? neonCyan : panelDark;
+            btnAdvanced.ForeColor = _advancedVisible ? panelDark : neonCyan;
+            UpdateAdvancedVisibility();
+        };
+
+        if (_flpHeaderActions != null)
+        {
+            _flpHeaderActions.Controls.Add(btnAdvanced);
+            _flpHeaderActions.Controls.SetChildIndex(btnAdvanced, 0);
+        }
+
+        UpdateAdvancedVisibility();
+    }
+
+    private void ApplyCyberpunkKids(Control parent, Color bgDark, Color panelDark, Color neonGreen, Color neonCyan)
+    {
+        if (parent == null) return;
+        foreach (Control c in parent.Controls)
+        {
+            c.ForeColor = neonGreen;
+
+            if (c is Panel pnl && pnl.Name == "_panelSshPassword")
+            {
+                pnl.BackColor = bgDark;
+                pnl.BorderStyle = BorderStyle.FixedSingle;
+            }
+
+            if (c is TextBox txt && txt.Name != "_txtLog")
+            {
+                txt.BorderStyle = txt.Name == "_txtSshPassword" ? BorderStyle.None : BorderStyle.FixedSingle;
+                txt.BackColor = bgDark;
+                txt.ForeColor = neonCyan;
+                if (txt.Name == "_txtSshPassword")
+                {
+                    txt.Location = new Point(5, txt.Location.Y);
+                    if (txt.Parent != null)
+                    {
+                        txt.Width = txt.Parent.Width - 40;
+                    }
+                }
+            }
+            if (c is ComboBox cmb)
+            {
+                cmb.FlatStyle = FlatStyle.Flat;
+                cmb.BackColor = bgDark;
+                cmb.ForeColor = neonCyan;
+            }
+            if (c is NumericUpDown num)
+            {
+                num.BackColor = bgDark;
+                num.ForeColor = neonCyan;
+                num.BorderStyle = BorderStyle.FixedSingle;
+            }
+            if (c is Button btn && (btn.Name == "_btnRun" || btn.Name == "_btnStop" || btn.Name == "_btnOpenScripts"))
+            {
+                btn.FlatStyle = FlatStyle.Flat;
+                btn.FlatAppearance.BorderSize = 1;
+                btn.Font = new Font("Consolas", 10F, FontStyle.Bold);
+                btn.AutoSize = true;
+                btn.MinimumSize = new Size(130, 44);
+
+                if (btn.Name == "_btnRun")
+                {
+                    btn.BackColor = Color.FromArgb(0, 40, 0);
+                    btn.ForeColor = neonGreen;
+                    btn.FlatAppearance.BorderColor = neonGreen;
+                    btn.Text = "▶  EJECUTAR ";
+                }
+                else if (btn.Name == "_btnStop")
+                {
+                    btn.BackColor = Color.FromArgb(60, 10, 10);
+                    btn.ForeColor = Color.FromArgb(255, 120, 120); // Rojo brillante
+                    btn.FlatAppearance.BorderColor = Color.FromArgb(255, 60, 60);
+                    btn.Text = "⏹  DETENER ";
+                }
+                else if (btn.Name == "_btnOpenScripts")
+                {
+                    btn.BackColor = panelDark;
+                    btn.ForeColor = neonCyan;
+                    btn.FlatAppearance.BorderColor = neonCyan;
+                    btn.Text = "📂  SCRIPTS ";
+                }
+            }
+            if (c is Button showBtn && showBtn.Name == "_btnShowPassword")
+            {
+                showBtn.FlatStyle = FlatStyle.Flat;
+                showBtn.FlatAppearance.BorderSize = 0;
+                showBtn.BackColor = bgDark;
+                showBtn.ForeColor = neonCyan;
+            }
+            ApplyCyberpunkKids(c, bgDark, panelDark, neonGreen, neonCyan);
+        }
+    }
+
+    private void UpdateAdvancedVisibility()
+    {
+        // General (Avanzados)
+        SetRowVisible(_tblGeneral, _txtRemoteRepoPath, _advancedVisible);
+        SetRowVisible(_tblGeneral, _txtBranch, _advancedVisible);
+        SetRowVisible(_tblGeneral, _txtComposeFile, _advancedVisible);
+        SetRowVisible(_tblGeneral, _txtGitToken, _advancedVisible);
+
+        // SSH (Avanzados)
+        SetRowVisible(_tblSsh, _numSshPort, _advancedVisible);
+        SetRowVisible(_tblSsh, _txtSshKeyPath, _advancedVisible);
+
+        if (_chkSshBatchMode != null) _chkSshBatchMode.Visible = _advancedVisible;
+        if (_chkInteractiveWindowForPassword != null) _chkInteractiveWindowForPassword.Visible = _advancedVisible;
+    }
+
+    private void SetRowVisible(TableLayoutPanel panel, Control ctrl, bool visible)
+    {
+        if (panel == null || ctrl == null) return;
+        var pos = panel.GetPositionFromControl(ctrl);
+        if (pos.Row >= 0)
+        {
+            ctrl.Visible = visible;
+            // Ocultar también la etiqueta (Label) que suele estar en la misma fila (columna 0)
+            for (int c = 0; c < panel.ColumnCount; c++)
+            {
+                var sibling = panel.GetControlFromPosition(c, pos.Row);
+                if (sibling != null) sibling.Visible = visible;
+            }
+        }
     }
 
     private sealed class UiSettings
