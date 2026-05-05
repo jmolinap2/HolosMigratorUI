@@ -65,6 +65,9 @@ partial class Form1
     private Button _btnOpenScripts;
     private Button _btnOpenLog;
     private TextBox _txtLog;
+    private ProgressBar _progressBar;
+    private Panel _panelStatus;
+    private Label _lblStatus;
 
     /// <summary>
     ///  Clean up any resources being used.
@@ -137,6 +140,9 @@ partial class Form1
         _panelSkipFlags = new FlowLayoutPanel();
         _grpLog = new GroupBox();
         _txtLog = new TextBox();
+        _progressBar = new ProgressBar();
+        _panelStatus = new Panel();
+        _lblStatus = new Label();
         _btnRun = new Button();
         _btnOpenScripts = new Button();
         _btnOpenLog = new Button();
@@ -156,6 +162,7 @@ partial class Form1
         _grpOps.SuspendLayout();
         _tblOps.SuspendLayout();
         _grpLog.SuspendLayout();
+        _panelStatus.SuspendLayout();
         _panelHeader.SuspendLayout();
         _flpHeaderActions.SuspendLayout();
         SuspendLayout();
@@ -166,14 +173,18 @@ partial class Form1
         _tableRoot.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         _tableRoot.Controls.Add(_tableTop, 0, 0);
         _tableRoot.Controls.Add(_grpLog, 0, 1);
+        _tableRoot.Controls.Add(_progressBar, 0, 2);
+        _tableRoot.Controls.Add(_panelStatus, 0, 3);
         _tableRoot.Dock = DockStyle.Fill;
         _tableRoot.Location = new Point(0, 64);
         _tableRoot.Margin = new Padding(4, 5, 4, 5);
         _tableRoot.Name = "_tableRoot";
         _tableRoot.Padding = new Padding(20, 16, 20, 16);
-        _tableRoot.RowCount = 2;
+        _tableRoot.RowCount = 4;
         _tableRoot.RowStyles.Add(new RowStyle(SizeType.Percent, 45F));
         _tableRoot.RowStyles.Add(new RowStyle(SizeType.Percent, 55F));
+        _tableRoot.RowStyles.Add(new RowStyle(SizeType.Absolute, 18F));
+        _tableRoot.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
         _tableRoot.Size = new Size(1829, 986);
         _tableRoot.TabIndex = 0;
         // 
@@ -192,7 +203,7 @@ partial class Form1
         _tableTop.Name = "_tableTop";
         _tableTop.RowCount = 1;
         _tableTop.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        _tableTop.Size = new Size(1781, 419);
+        _tableTop.Size = new Size(1781, 393);
         _tableTop.TabIndex = 0;
         // 
         // _grpGeneral
@@ -208,7 +219,7 @@ partial class Form1
         _grpGeneral.Margin = new Padding(9, 10, 9, 10);
         _grpGeneral.Name = "_grpGeneral";
         _grpGeneral.Padding = new Padding(10, 12, 10, 10);
-        _grpGeneral.Size = new Size(587, 399);
+        _grpGeneral.Size = new Size(587, 373);
         _grpGeneral.TabIndex = 0;
         _grpGeneral.TabStop = false;
         _grpGeneral.Text = "General";
@@ -423,7 +434,7 @@ partial class Form1
         _grpSsh.Margin = new Padding(9, 10, 9, 10);
         _grpSsh.Name = "_grpSsh";
         _grpSsh.Padding = new Padding(10, 12, 10, 10);
-        _grpSsh.Size = new Size(623, 399);
+        _grpSsh.Size = new Size(623, 373);
         _grpSsh.TabIndex = 1;
         _grpSsh.TabStop = false;
         _grpSsh.Text = "SSH";
@@ -660,7 +671,7 @@ partial class Form1
         _grpOps.Margin = new Padding(9, 10, 9, 10);
         _grpOps.Name = "_grpOps";
         _grpOps.Padding = new Padding(10, 12, 10, 10);
-        _grpOps.Size = new Size(517, 399);
+        _grpOps.Size = new Size(517, 373);
         _grpOps.TabIndex = 1;
         _grpOps.TabStop = false;
         _grpOps.Text = "Opciones de despliegue y migración";
@@ -772,11 +783,11 @@ partial class Form1
         _grpLog.Controls.Add(_txtLog);
         _grpLog.Dock = DockStyle.Fill;
         _grpLog.ForeColor = Color.FromArgb(37, 99, 235);
-        _grpLog.Location = new Point(29, 455);
+        _grpLog.Location = new Point(29, 429);
         _grpLog.Margin = new Padding(9, 10, 9, 10);
         _grpLog.Name = "_grpLog";
         _grpLog.Padding = new Padding(10, 12, 10, 10);
-        _grpLog.Size = new Size(1771, 505);
+        _grpLog.Size = new Size(1771, 472);
         _grpLog.TabIndex = 3;
         _grpLog.TabStop = false;
         _grpLog.Text = "Salida en tiempo real";
@@ -793,8 +804,41 @@ partial class Form1
         _txtLog.Name = "_txtLog";
         _txtLog.ReadOnly = true;
         _txtLog.ScrollBars = ScrollBars.Both;
-        _txtLog.Size = new Size(1751, 459);
+        _txtLog.Size = new Size(1751, 426);
         _txtLog.TabIndex = 0;
+        // 
+        // _progressBar
+        // 
+        _progressBar.Dock = DockStyle.Fill;
+        _progressBar.Location = new Point(40, 911);
+        _progressBar.Margin = new Padding(20, 0, 20, 0);
+        _progressBar.MarqueeAnimationSpeed = 30;
+        _progressBar.Name = "_progressBar";
+        _progressBar.Size = new Size(1749, 18);
+        _progressBar.Style = ProgressBarStyle.Marquee;
+        _progressBar.TabIndex = 4;
+        _progressBar.Visible = false;
+        // 
+        // _panelStatus
+        // 
+        _panelStatus.Controls.Add(_lblStatus);
+        _panelStatus.Dock = DockStyle.Fill;
+        _panelStatus.Location = new Point(40, 933);
+        _panelStatus.Margin = new Padding(20, 4, 20, 4);
+        _panelStatus.Name = "_panelStatus";
+        _panelStatus.Size = new Size(1749, 33);
+        _panelStatus.TabIndex = 5;
+        _panelStatus.Visible = false;
+        // 
+        // _lblStatus
+        // 
+        _lblStatus.Dock = DockStyle.Fill;
+        _lblStatus.Font = new Font("Consolas", 11F, FontStyle.Bold);
+        _lblStatus.Location = new Point(0, 0);
+        _lblStatus.Name = "_lblStatus";
+        _lblStatus.Size = new Size(1749, 33);
+        _lblStatus.TabIndex = 0;
+        _lblStatus.TextAlign = ContentAlignment.MiddleCenter;
         // 
         // _btnRun
         // 
@@ -945,6 +989,7 @@ partial class Form1
         _tblOps.PerformLayout();
         _grpLog.ResumeLayout(false);
         _grpLog.PerformLayout();
+        _panelStatus.ResumeLayout(false);
         _panelHeader.ResumeLayout(false);
         _panelHeader.PerformLayout();
         _flpHeaderActions.ResumeLayout(false);

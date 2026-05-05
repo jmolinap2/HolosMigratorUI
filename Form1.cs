@@ -168,6 +168,7 @@ public partial class Form1 : Form
             var effectiveSshAuth = GetEffectiveSshAuthMode();
             var hasPassword = !string.IsNullOrWhiteSpace(_txtSshPassword.Text);
 
+            _panelStatus.Visible = false;
             SaveSettings();
 
             AppendLog($"Acción: {action}");
@@ -351,7 +352,11 @@ public partial class Form1 : Form
 
         process.OutputDataReceived += (_, e) =>
         {
-            if (e.Data != null) { AppendLog(e.Data); }
+            if (e.Data != null)
+            {
+                AppendLog(e.Data);
+                this.Invoke(() => UpdateProgressFromLog(e.Data));
+            }
         };
         process.ErrorDataReceived += (_, e) =>
         {
@@ -359,12 +364,21 @@ public partial class Form1 : Form
             {
                 var clean = AnsiRegex().Replace(e.Data, string.Empty);
                 if (!string.IsNullOrWhiteSpace(clean))
+                {
                     AppendLog("ERR: " + clean);
+                    this.Invoke(() => UpdateProgressFromLog(clean));
+                }
             }
         };
 
         _btnRun.Enabled = false;
         _btnStop.Enabled = true;
+        _progressBar.Style = ProgressBarStyle.Continuous;
+        _progressBar.Minimum = 0;
+        _progressBar.Maximum = 100;
+        _progressBar.Value = 0;
+        _progressBar.Visible = true;
+        _panelStatus.Visible = false;
 
         AppendLog($"════════ INICIO [{DateTime.Now:yyyy-MM-dd HH:mm:ss}] ════════");
         process.Start();
@@ -373,10 +387,57 @@ public partial class Form1 : Form
 
         await process.WaitForExitAsync();
 
+        _progressBar.Visible = false;
         AppendLog($"════════ FIN código={process.ExitCode} [{DateTime.Now:HH:mm:ss}] ════════");
+
+        bool success = process.ExitCode == 0;
+        _panelStatus.BackColor = success ? Color.FromArgb(0, 40, 10) : Color.FromArgb(60, 10, 10);
+        _lblStatus.ForeColor = success ? Color.FromArgb(0, 255, 65) : Color.FromArgb(255, 80, 80);
+        _lblStatus.Text = success
+            ? "✅  DEPLOY COMPLETADO CORRECTAMENTE"
+            : $"❌  ERROR — Proceso terminó con código {process.ExitCode}. Revisa la salida arriba.";
+        _panelStatus.Visible = true;
+
         _runningProcess = null;
         _btnRun.Enabled = true;
         _btnStop.Enabled = false;
+    }
+
+    private static readonly (string Pattern, int Value)[] _progressSteps =
+    [
+        ("[INFO] Verificando docker compose",     5),
+        ("[INFO] Actualizando codigo",            10),
+        ("[INFO] SkipPull activo",               15),
+        ("[INFO] Levantando target",             25),
+        ("[INFO] Asegurando SQL Server",         70),
+        ("[INFO] Ejecutando migraciones",        75),
+        ("[INFO] SkipMigrations activo",         80),
+        ("[INFO] Estado final de servicios",     88),
+        ("[INFO] Smoke checks internos",         90),
+        ("[OK] Deploy remoto completado",        95),
+        ("[INFO] Smoke checks publicos",         97),
+        ("[OK] Automatizacion finalizada",      100),
+    ];
+
+    private void UpdateProgressFromLog(string line)
+    {
+        // Docker build layers (#N) contribuyen al rango 25-68%
+        if (line.StartsWith('#') && _progressBar.Value is >= 25 and < 68)
+        {
+            // Avanza 1% por cada línea de build layer, tope en 68
+            var next = Math.Min(_progressBar.Value + 1, 68);
+            if (next > _progressBar.Value) _progressBar.Value = next;
+            return;
+        }
+
+        foreach (var (pattern, value) in _progressSteps)
+        {
+            if (line.Contains(pattern) && value > _progressBar.Value)
+            {
+                _progressBar.Value = value;
+                return;
+            }
+        }
     }
 
     private void StartInteractiveWindow(List<string> args)
@@ -636,6 +697,11 @@ public partial class Form1 : Form
         }
 
         foreach (Control c in this.Controls) { ApplyCyberpunkKids(c, bgDark, panelDark, neonGreen, neonCyan); }
+
+        // Estilizar barra de progreso y panel de estado
+        _progressBar.BackColor = panelDark;
+        _progressBar.ForeColor = neonCyan;
+        _panelStatus.BackColor = panelDark;
 
         var btnAdvanced = new Button
         {
