@@ -17,28 +17,14 @@ public partial class Form1 : Form
     public Form1()
     {
         InitializeComponent();
-        FixDesignerBugs();
         BindEvents();
         LoadSettings();
         LoadEnvVariables();
         ApplyUiState();
-        ConfigureCyberpunkUI();
+        UpdateAdvancedButtonState();
+        UpdateAdvancedVisibility();
         FormClosing += (_, _) => SaveSettings();
         AppendLog("✅ Sistema listo. Ingresa tu Password SSH y presiona '▶ EJECUTAR' arriba a la derecha.");
-    }
-
-    private void FixDesignerBugs()
-    {
-        // Forzar visibilidad y tamaño de textboxes rotos por el diseñador de WinForms
-        _txtSshPassword.Multiline = false;
-        _txtSshPassword.Size = new Size(_panelSshPassword.Width - 40, 25);
-        _txtSshPassword.Location = new Point(5, 5);
-
-        // Seleccionar el primer elemento en todos los ComboBoxes para que no aparezcan vacíos
-        if (_cmbAction.Items.Count > 0 && _cmbAction.SelectedIndex == -1) _cmbAction.SelectedIndex = 0;
-        if (_cmbSshAuth.Items.Count > 0 && _cmbSshAuth.SelectedIndex == -1) _cmbSshAuth.SelectedIndex = 0;
-        if (_cmbDeployTarget.Items.Count > 0 && _cmbDeployTarget.SelectedIndex == -1) _cmbDeployTarget.SelectedIndex = 0;
-        if (_cmbMigrationMode.Items.Count > 0 && _cmbMigrationMode.SelectedIndex == -1) _cmbMigrationMode.SelectedIndex = 0;
     }
 
     private void LoadEnvVariables()
@@ -101,6 +87,7 @@ public partial class Form1 : Form
         _txtSshPassword.TextChanged += (_, _) => ApplyUiState();
         _cmbMigrationMode.SelectedIndexChanged += (_, _) => ApplyUiState();
         _chkSkipMigrations.CheckedChanged += (_, _) => ApplyUiState();
+        _btnAdvanced.Click += (_, _) => ToggleAdvancedMode();
         _btnRun.Click += async (_, _) => await RunSelectedActionAsync();
         _btnStop.Click += (_, _) => StopCurrentProcess();
         _btnOpenScripts.Click += (_, _) => OpenScriptsFolder();
@@ -126,7 +113,6 @@ public partial class Form1 : Form
         bool tenantActive = migrationMode == "U" && !skippingMigrations;
         _txtTenant.Enabled = tenantActive;
         _txtTenant.PlaceholderText = tenantActive ? "Escribe el nombre del tenant..." : "(Habilitado solo si modo es 'U')";
-        _txtTenant.BackColor = tenantActive ? Color.FromArgb(9, 9, 11) : Color.FromArgb(20, 20, 25);
 
         _chkSkipPull.Enabled = action == "Deploy completo";
         _chkSkipMigrations.Enabled = action == "Deploy completo";
@@ -655,164 +641,16 @@ public partial class Form1 : Form
 
     private bool _advancedVisible = false;
 
-    private void ConfigureCyberpunkUI()
+    private void ToggleAdvancedMode()
     {
-        // Paleta Cyberpunk
-        var bgDark = Color.FromArgb(9, 9, 11);
-        var panelDark = Color.FromArgb(18, 18, 23);
-        var neonGreen = Color.FromArgb(0, 255, 65);
-        var neonCyan = Color.FromArgb(0, 255, 255);
-        var terminalFont = new Font("Consolas", 10F, FontStyle.Regular);
-        var titleFont = new Font("Consolas", 11F, FontStyle.Bold);
-
-        this.BackColor = bgDark;
-
-        foreach (var grp in new[] { _grpGeneral, _grpSsh, _grpOps })
-        {
-            if (grp == null) continue;
-            grp.BackColor = panelDark;
-            grp.FlatStyle = FlatStyle.Flat;
-            grp.Font = titleFont;
-            grp.ForeColor = neonCyan;
-            grp.Padding = new Padding(15);
-        }
-
-        foreach (var tbl in new[] { _tblGeneral, _tblSsh, _tblOps })
-        {
-            if (tbl == null) continue;
-            tbl.Font = terminalFont;
-            tbl.BackColor = panelDark;
-            tbl.ForeColor = neonGreen;
-        }
-
-        if (_panelHeader != null)
-        {
-            _panelHeader.BackColor = Color.FromArgb(5, 5, 5);
-        }
-        if (_lblAppTitle != null)
-        {
-            _lblAppTitle.ForeColor = neonGreen;
-            _lblAppTitle.Font = new Font("Consolas", 16F, FontStyle.Bold);
-            _lblAppTitle.Text = "> HOLOS_MIGRATOR_SYS_CTL";
-        }
-
-        foreach (Control c in this.Controls) { ApplyCyberpunkKids(c, bgDark, panelDark, neonGreen, neonCyan); }
-
-        // Estilizar barra de progreso y panel de estado
-        _progressBar.BackColor = panelDark;
-        _progressBar.ForeColor = neonCyan;
-        _panelStatus.BackColor = panelDark;
-
-        var btnAdvanced = new Button
-        {
-            Text = "[ SYS.ADVANCED ]",
-            BackColor = panelDark,
-            ForeColor = neonCyan,
-            FlatStyle = FlatStyle.Flat,
-            Font = titleFont,
-            AutoSize = true,
-            MinimumSize = new Size(160, 44),
-            Margin = new Padding(0, 10, 10, 10),
-            Cursor = Cursors.Hand
-        };
-        btnAdvanced.FlatAppearance.BorderColor = neonCyan;
-        btnAdvanced.FlatAppearance.BorderSize = 1;
-
-        btnAdvanced.Click += (_, _) =>
-        {
-            _advancedVisible = !_advancedVisible;
-            btnAdvanced.BackColor = _advancedVisible ? neonCyan : panelDark;
-            btnAdvanced.ForeColor = _advancedVisible ? panelDark : neonCyan;
-            UpdateAdvancedVisibility();
-        };
-
-        if (_flpHeaderActions != null)
-        {
-            _flpHeaderActions.Controls.Add(btnAdvanced);
-            _flpHeaderActions.Controls.SetChildIndex(btnAdvanced, 0);
-        }
-
+        _advancedVisible = !_advancedVisible;
+        UpdateAdvancedButtonState();
         UpdateAdvancedVisibility();
     }
 
-    private void ApplyCyberpunkKids(Control parent, Color bgDark, Color panelDark, Color neonGreen, Color neonCyan)
+    private void UpdateAdvancedButtonState()
     {
-        if (parent == null) return;
-        foreach (Control c in parent.Controls)
-        {
-            c.ForeColor = neonGreen;
-
-            if (c is Panel pnl && pnl.Name == "_panelSshPassword")
-            {
-                pnl.BackColor = bgDark;
-                pnl.BorderStyle = BorderStyle.FixedSingle;
-            }
-
-            if (c is TextBox txt && txt.Name != "_txtLog")
-            {
-                txt.BorderStyle = txt.Name == "_txtSshPassword" ? BorderStyle.None : BorderStyle.FixedSingle;
-                txt.BackColor = bgDark;
-                txt.ForeColor = neonCyan;
-                if (txt.Name == "_txtSshPassword")
-                {
-                    txt.Location = new Point(5, txt.Location.Y);
-                    if (txt.Parent != null)
-                    {
-                        txt.Width = txt.Parent.Width - 40;
-                    }
-                }
-            }
-            if (c is ComboBox cmb)
-            {
-                cmb.FlatStyle = FlatStyle.Flat;
-                cmb.BackColor = bgDark;
-                cmb.ForeColor = neonCyan;
-            }
-            if (c is NumericUpDown num)
-            {
-                num.BackColor = bgDark;
-                num.ForeColor = neonCyan;
-                num.BorderStyle = BorderStyle.FixedSingle;
-            }
-            if (c is Button btn && (btn.Name == "_btnRun" || btn.Name == "_btnStop" || btn.Name == "_btnOpenScripts"))
-            {
-                btn.FlatStyle = FlatStyle.Flat;
-                btn.FlatAppearance.BorderSize = 1;
-                btn.Font = new Font("Consolas", 10F, FontStyle.Bold);
-                btn.AutoSize = true;
-                btn.MinimumSize = new Size(130, 44);
-
-                if (btn.Name == "_btnRun")
-                {
-                    btn.BackColor = Color.FromArgb(0, 40, 0);
-                    btn.ForeColor = neonGreen;
-                    btn.FlatAppearance.BorderColor = neonGreen;
-                    btn.Text = "▶  EJECUTAR ";
-                }
-                else if (btn.Name == "_btnStop")
-                {
-                    btn.BackColor = Color.FromArgb(60, 10, 10);
-                    btn.ForeColor = Color.FromArgb(255, 120, 120); // Rojo brillante
-                    btn.FlatAppearance.BorderColor = Color.FromArgb(255, 60, 60);
-                    btn.Text = "⏹  DETENER ";
-                }
-                else if (btn.Name == "_btnOpenScripts")
-                {
-                    btn.BackColor = panelDark;
-                    btn.ForeColor = neonCyan;
-                    btn.FlatAppearance.BorderColor = neonCyan;
-                    btn.Text = "📂  SCRIPTS ";
-                }
-            }
-            if (c is Button showBtn && showBtn.Name == "_btnShowPassword")
-            {
-                showBtn.FlatStyle = FlatStyle.Flat;
-                showBtn.FlatAppearance.BorderSize = 0;
-                showBtn.BackColor = bgDark;
-                showBtn.ForeColor = neonCyan;
-            }
-            ApplyCyberpunkKids(c, bgDark, panelDark, neonGreen, neonCyan);
-        }
+        _btnAdvanced.Text = _advancedVisible ? "[ SYS.ADVANCED: ON ]" : "[ SYS.ADVANCED ]";
     }
 
     private void UpdateAdvancedVisibility()
