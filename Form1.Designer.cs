@@ -50,7 +50,10 @@ partial class Form1
     private Button _btnShowPassword;
     private Panel _panelHeader;
     private Label _lblAppTitle;
+    private Label _lblEnvironmentRisk;
     private FlowLayoutPanel _flpHeaderActions;
+    private Button _btnEnvironment;
+    private Button _btnControlCenter;
     private TextBox _txtSshKeyPath;
     private CheckBox _chkRememberSshPassword;
     private CheckBox _chkSshBatchMode;
@@ -146,12 +149,15 @@ partial class Form1
         _lblStatus = new Label();
         _btnRun = new Button();
         _btnAdvanced = new Button();
+        _btnEnvironment = new Button();
+        _btnControlCenter = new Button();
         _btnOpenScripts = new Button();
         _btnOpenLog = new Button();
         _btnStop = new Button();
         _panelActions = new FlowLayoutPanel();
         _panelHeader = new Panel();
         _flpHeaderActions = new FlowLayoutPanel();
+        _lblEnvironmentRisk = new Label();
         _lblAppTitle = new Label();
         _tableRoot.SuspendLayout();
         _tableTop.SuspendLayout();
@@ -171,13 +177,13 @@ partial class Form1
         // 
         // _tableRoot
         // 
+        _tableRoot.BackColor = Color.FromArgb(9, 9, 11);
         _tableRoot.ColumnCount = 1;
         _tableRoot.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         _tableRoot.Controls.Add(_tableTop, 0, 0);
         _tableRoot.Controls.Add(_grpLog, 0, 1);
         _tableRoot.Controls.Add(_progressBar, 0, 2);
         _tableRoot.Controls.Add(_panelStatus, 0, 3);
-        _tableRoot.BackColor = Color.FromArgb(9, 9, 11);
         _tableRoot.Dock = DockStyle.Fill;
         _tableRoot.Location = new Point(0, 64);
         _tableRoot.Margin = new Padding(4, 5, 4, 5);
@@ -211,12 +217,12 @@ partial class Form1
         // 
         // _grpGeneral
         // 
+        _grpGeneral.BackColor = Color.FromArgb(18, 18, 23);
         _grpGeneral.Controls.Add(_chkSkipMigrations);
         _grpGeneral.Controls.Add(_chkSkipPull);
         _grpGeneral.Controls.Add(_chkSkipBuild);
         _grpGeneral.Controls.Add(_chkSkipPublicChecks);
         _grpGeneral.Controls.Add(_tblGeneral);
-        _grpGeneral.BackColor = Color.FromArgb(18, 18, 23);
         _grpGeneral.Dock = DockStyle.Fill;
         _grpGeneral.FlatStyle = FlatStyle.Flat;
         _grpGeneral.Font = new Font("Consolas", 11F, FontStyle.Bold);
@@ -233,51 +239,52 @@ partial class Form1
         // _chkSkipMigrations
         // 
         _chkSkipMigrations.AutoSize = true;
+        _chkSkipMigrations.ForeColor = Color.FromArgb(0, 255, 65);
         _chkSkipMigrations.Location = new Point(282, 406);
         _chkSkipMigrations.Margin = new Padding(0, 4, 16, 4);
         _chkSkipMigrations.Name = "_chkSkipMigrations";
-        _chkSkipMigrations.Size = new Size(189, 29);
+        _chkSkipMigrations.Size = new Size(254, 30);
         _chkSkipMigrations.TabIndex = 1;
         _chkSkipMigrations.Text = "Omitir migraciones";
-        _chkSkipMigrations.ForeColor = Color.FromArgb(0, 255, 65);
         // 
         // _chkSkipPull
         // 
         _chkSkipPull.AutoSize = true;
+        _chkSkipPull.ForeColor = Color.FromArgb(0, 255, 65);
         _chkSkipPull.Location = new Point(28, 459);
         _chkSkipPull.Margin = new Padding(0, 4, 16, 4);
         _chkSkipPull.Name = "_chkSkipPull";
-        _chkSkipPull.Size = new Size(122, 29);
+        _chkSkipPull.Size = new Size(170, 30);
         _chkSkipPull.TabIndex = 0;
         _chkSkipPull.Text = "Omitir pull";
-        _chkSkipPull.ForeColor = Color.FromArgb(0, 255, 65);
         // 
         // _chkSkipBuild
         // 
         _chkSkipBuild.AutoSize = true;
+        _chkSkipBuild.ForeColor = Color.FromArgb(0, 255, 65);
         _chkSkipBuild.Location = new Point(282, 459);
         _chkSkipBuild.Margin = new Padding(0, 4, 16, 4);
         _chkSkipBuild.Name = "_chkSkipBuild";
-        _chkSkipBuild.Size = new Size(133, 29);
+        _chkSkipBuild.Size = new Size(182, 30);
         _chkSkipBuild.TabIndex = 2;
         _chkSkipBuild.Text = "Omitir build";
-        _chkSkipBuild.ForeColor = Color.FromArgb(0, 255, 65);
         // 
         // _chkSkipPublicChecks
         // 
         _chkSkipPublicChecks.AutoSize = true;
+        _chkSkipPublicChecks.ForeColor = Color.FromArgb(0, 255, 65);
         _chkSkipPublicChecks.Location = new Point(28, 406);
         _chkSkipPublicChecks.Margin = new Padding(0, 4, 0, 4);
         _chkSkipPublicChecks.Name = "_chkSkipPublicChecks";
-        _chkSkipPublicChecks.Size = new Size(217, 29);
+        _chkSkipPublicChecks.Size = new Size(302, 30);
         _chkSkipPublicChecks.TabIndex = 3;
         _chkSkipPublicChecks.Text = "Omitir checks públicos";
-        _chkSkipPublicChecks.ForeColor = Color.FromArgb(0, 255, 65);
         // 
         // _tblGeneral
         // 
         _tblGeneral.AutoSize = true;
         _tblGeneral.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+        _tblGeneral.BackColor = Color.FromArgb(18, 18, 23);
         _tblGeneral.ColumnCount = 2;
         _tblGeneral.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 243F));
         _tblGeneral.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
@@ -293,11 +300,10 @@ partial class Form1
         _tblGeneral.Controls.Add(_txtComposeFile, 1, 4);
         _tblGeneral.Controls.Add(_lblGitToken, 0, 5);
         _tblGeneral.Controls.Add(_txtGitToken, 1, 5);
-        _tblGeneral.BackColor = Color.FromArgb(18, 18, 23);
         _tblGeneral.Dock = DockStyle.Top;
-        _tblGeneral.Font = new Font("Consolas", 10F, FontStyle.Regular);
+        _tblGeneral.Font = new Font("Consolas", 10F);
         _tblGeneral.ForeColor = Color.FromArgb(0, 255, 65);
-        _tblGeneral.Location = new Point(10, 36);
+        _tblGeneral.Location = new Point(15, 41);
         _tblGeneral.Margin = new Padding(4, 5, 4, 5);
         _tblGeneral.Name = "_tblGeneral";
         _tblGeneral.RowCount = 6;
@@ -307,17 +313,17 @@ partial class Form1
         _tblGeneral.RowStyles.Add(new RowStyle());
         _tblGeneral.RowStyles.Add(new RowStyle());
         _tblGeneral.RowStyles.Add(new RowStyle());
-        _tblGeneral.Size = new Size(567, 236);
+        _tblGeneral.Size = new Size(557, 236);
         _tblGeneral.TabIndex = 0;
         // 
         // _lblAction
         // 
         _lblAction.Anchor = AnchorStyles.Left;
         _lblAction.AutoSize = true;
-        _lblAction.Location = new Point(4, 8);
+        _lblAction.Location = new Point(4, 9);
         _lblAction.Margin = new Padding(4, 6, 4, 6);
         _lblAction.Name = "_lblAction";
-        _lblAction.Size = new Size(69, 25);
+        _lblAction.Size = new Size(87, 23);
         _lblAction.TabIndex = 0;
         _lblAction.Text = "Acción:";
         // 
@@ -332,18 +338,17 @@ partial class Form1
         _cmbAction.Location = new Point(247, 4);
         _cmbAction.Margin = new Padding(4);
         _cmbAction.Name = "_cmbAction";
-        _cmbAction.SelectedIndex = 0;
-        _cmbAction.Size = new Size(316, 33);
+        _cmbAction.Size = new Size(306, 31);
         _cmbAction.TabIndex = 1;
         // 
         // _lblRepoPath
         // 
         _lblRepoPath.Anchor = AnchorStyles.Left;
         _lblRepoPath.AutoSize = true;
-        _lblRepoPath.Location = new Point(4, 48);
+        _lblRepoPath.Location = new Point(4, 49);
         _lblRepoPath.Margin = new Padding(4, 6, 4, 6);
         _lblRepoPath.Name = "_lblRepoPath";
-        _lblRepoPath.Size = new Size(98, 25);
+        _lblRepoPath.Size = new Size(131, 23);
         _lblRepoPath.TabIndex = 2;
         _lblRepoPath.Text = "Repo local:";
         // 
@@ -356,7 +361,7 @@ partial class Form1
         _txtRepoPath.Location = new Point(247, 45);
         _txtRepoPath.Margin = new Padding(4);
         _txtRepoPath.Name = "_txtRepoPath";
-        _txtRepoPath.Size = new Size(316, 31);
+        _txtRepoPath.Size = new Size(306, 31);
         _txtRepoPath.TabIndex = 3;
         _txtRepoPath.Text = "C:\\Repos\\OmniSuite";
         // 
@@ -364,10 +369,10 @@ partial class Form1
         // 
         _lblRemoteRepoPath.Anchor = AnchorStyles.Left;
         _lblRemoteRepoPath.AutoSize = true;
-        _lblRemoteRepoPath.Location = new Point(4, 87);
+        _lblRemoteRepoPath.Location = new Point(4, 88);
         _lblRemoteRepoPath.Margin = new Padding(4, 6, 4, 6);
         _lblRemoteRepoPath.Name = "_lblRemoteRepoPath";
-        _lblRemoteRepoPath.Size = new Size(121, 25);
+        _lblRemoteRepoPath.Size = new Size(142, 23);
         _lblRemoteRepoPath.TabIndex = 4;
         _lblRemoteRepoPath.Text = "Repo remoto:";
         // 
@@ -380,7 +385,7 @@ partial class Form1
         _txtRemoteRepoPath.Location = new Point(247, 84);
         _txtRemoteRepoPath.Margin = new Padding(4);
         _txtRemoteRepoPath.Name = "_txtRemoteRepoPath";
-        _txtRemoteRepoPath.Size = new Size(316, 31);
+        _txtRemoteRepoPath.Size = new Size(306, 31);
         _txtRemoteRepoPath.TabIndex = 5;
         _txtRemoteRepoPath.Text = "/root/OmniSuite";
         // 
@@ -388,10 +393,10 @@ partial class Form1
         // 
         _lblBranch.Anchor = AnchorStyles.Left;
         _lblBranch.AutoSize = true;
-        _lblBranch.Location = new Point(4, 126);
+        _lblBranch.Location = new Point(4, 127);
         _lblBranch.Margin = new Padding(4, 6, 4, 6);
         _lblBranch.Name = "_lblBranch";
-        _lblBranch.Size = new Size(61, 25);
+        _lblBranch.Size = new Size(65, 23);
         _lblBranch.TabIndex = 6;
         _lblBranch.Text = "Rama:";
         // 
@@ -404,7 +409,7 @@ partial class Form1
         _txtBranch.Location = new Point(247, 123);
         _txtBranch.Margin = new Padding(4);
         _txtBranch.Name = "_txtBranch";
-        _txtBranch.Size = new Size(316, 31);
+        _txtBranch.Size = new Size(306, 31);
         _txtBranch.TabIndex = 7;
         _txtBranch.Text = "develop";
         // 
@@ -412,10 +417,10 @@ partial class Form1
         // 
         _lblComposeFile.Anchor = AnchorStyles.Left;
         _lblComposeFile.AutoSize = true;
-        _lblComposeFile.Location = new Point(4, 165);
+        _lblComposeFile.Location = new Point(4, 166);
         _lblComposeFile.Margin = new Padding(4, 6, 4, 6);
         _lblComposeFile.Name = "_lblComposeFile";
-        _lblComposeFile.Size = new Size(155, 25);
+        _lblComposeFile.Size = new Size(186, 23);
         _lblComposeFile.TabIndex = 8;
         _lblComposeFile.Text = "Archivo compose:";
         // 
@@ -428,7 +433,7 @@ partial class Form1
         _txtComposeFile.Location = new Point(247, 162);
         _txtComposeFile.Margin = new Padding(4);
         _txtComposeFile.Name = "_txtComposeFile";
-        _txtComposeFile.Size = new Size(316, 31);
+        _txtComposeFile.Size = new Size(306, 31);
         _txtComposeFile.TabIndex = 9;
         _txtComposeFile.Text = "docker-compose.hostinger.yml";
         // 
@@ -436,10 +441,10 @@ partial class Form1
         // 
         _lblGitToken.Anchor = AnchorStyles.Left;
         _lblGitToken.AutoSize = true;
-        _lblGitToken.Location = new Point(4, 204);
+        _lblGitToken.Location = new Point(4, 205);
         _lblGitToken.Margin = new Padding(4, 6, 4, 6);
         _lblGitToken.Name = "_lblGitToken";
-        _lblGitToken.Size = new Size(123, 25);
+        _lblGitToken.Size = new Size(153, 23);
         _lblGitToken.TabIndex = 10;
         _lblGitToken.Text = "Token GitHub:";
         // 
@@ -452,14 +457,14 @@ partial class Form1
         _txtGitToken.Location = new Point(247, 201);
         _txtGitToken.Margin = new Padding(4);
         _txtGitToken.Name = "_txtGitToken";
-        _txtGitToken.Size = new Size(316, 31);
+        _txtGitToken.Size = new Size(306, 31);
         _txtGitToken.TabIndex = 11;
         _txtGitToken.UseSystemPasswordChar = true;
         // 
         // _grpSsh
         // 
-        _grpSsh.Controls.Add(_tblSsh);
         _grpSsh.BackColor = Color.FromArgb(18, 18, 23);
+        _grpSsh.Controls.Add(_tblSsh);
         _grpSsh.Dock = DockStyle.Fill;
         _grpSsh.FlatStyle = FlatStyle.Flat;
         _grpSsh.Font = new Font("Consolas", 11F, FontStyle.Bold);
@@ -477,6 +482,7 @@ partial class Form1
         // 
         _tblSsh.AutoSize = true;
         _tblSsh.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+        _tblSsh.BackColor = Color.FromArgb(18, 18, 23);
         _tblSsh.ColumnCount = 2;
         _tblSsh.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 243F));
         _tblSsh.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
@@ -495,11 +501,10 @@ partial class Form1
         _tblSsh.Controls.Add(_txtSshKeyPath, 1, 6);
         _tblSsh.Controls.Add(_chkSshBatchMode, 1, 7);
         _tblSsh.Controls.Add(_chkInteractiveWindowForPassword, 1, 8);
-        _tblSsh.BackColor = Color.FromArgb(18, 18, 23);
         _tblSsh.Dock = DockStyle.Top;
-        _tblSsh.Font = new Font("Consolas", 10F, FontStyle.Regular);
+        _tblSsh.Font = new Font("Consolas", 10F);
         _tblSsh.ForeColor = Color.FromArgb(0, 255, 65);
-        _tblSsh.Location = new Point(10, 36);
+        _tblSsh.Location = new Point(10, 38);
         _tblSsh.Margin = new Padding(4, 5, 4, 5);
         _tblSsh.Name = "_tblSsh";
         _tblSsh.RowCount = 9;
@@ -512,17 +517,17 @@ partial class Form1
         _tblSsh.RowStyles.Add(new RowStyle());
         _tblSsh.RowStyles.Add(new RowStyle());
         _tblSsh.RowStyles.Add(new RowStyle());
-        _tblSsh.Size = new Size(603, 371);
+        _tblSsh.Size = new Size(603, 363);
         _tblSsh.TabIndex = 0;
         // 
         // _lblServerHost
         // 
         _lblServerHost.Anchor = AnchorStyles.Left;
         _lblServerHost.AutoSize = true;
-        _lblServerHost.Location = new Point(4, 10);
+        _lblServerHost.Location = new Point(4, 11);
         _lblServerHost.Margin = new Padding(4, 6, 4, 6);
         _lblServerHost.Name = "_lblServerHost";
-        _lblServerHost.Size = new Size(82, 25);
+        _lblServerHost.Size = new Size(109, 23);
         _lblServerHost.TabIndex = 0;
         _lblServerHost.Text = "Servidor:";
         // 
@@ -542,10 +547,10 @@ partial class Form1
         // 
         _lblServerUser.Anchor = AnchorStyles.Left;
         _lblServerUser.AutoSize = true;
-        _lblServerUser.Location = new Point(4, 55);
+        _lblServerUser.Location = new Point(4, 56);
         _lblServerUser.Margin = new Padding(4, 6, 4, 6);
         _lblServerUser.Name = "_lblServerUser";
-        _lblServerUser.Size = new Size(76, 25);
+        _lblServerUser.Size = new Size(98, 23);
         _lblServerUser.TabIndex = 2;
         _lblServerUser.Text = "Usuario:";
         // 
@@ -565,10 +570,10 @@ partial class Form1
         // 
         _lblSshPort.Anchor = AnchorStyles.Left;
         _lblSshPort.AutoSize = true;
-        _lblSshPort.Location = new Point(4, 100);
+        _lblSshPort.Location = new Point(4, 101);
         _lblSshPort.Margin = new Padding(4, 6, 4, 6);
         _lblSshPort.Name = "_lblSshPort";
-        _lblSshPort.Size = new Size(106, 25);
+        _lblSshPort.Size = new Size(131, 23);
         _lblSshPort.TabIndex = 4;
         _lblSshPort.Text = "Puerto SSH:";
         // 
@@ -594,7 +599,7 @@ partial class Form1
         _lblSshAuth.Location = new Point(4, 143);
         _lblSshAuth.Margin = new Padding(4, 6, 4, 6);
         _lblSshAuth.Name = "_lblSshAuth";
-        _lblSshAuth.Size = new Size(103, 25);
+        _lblSshAuth.Size = new Size(109, 23);
         _lblSshAuth.TabIndex = 6;
         _lblSshAuth.Text = "Modo SSH:";
         // 
@@ -609,18 +614,17 @@ partial class Form1
         _cmbSshAuth.Location = new Point(247, 139);
         _cmbSshAuth.Margin = new Padding(4);
         _cmbSshAuth.Name = "_cmbSshAuth";
-        _cmbSshAuth.SelectedIndex = 0;
-        _cmbSshAuth.Size = new Size(352, 33);
+        _cmbSshAuth.Size = new Size(352, 31);
         _cmbSshAuth.TabIndex = 7;
         // 
         // _lblSshPassword
         // 
         _lblSshPassword.Anchor = AnchorStyles.Left;
         _lblSshPassword.AutoSize = true;
-        _lblSshPassword.Location = new Point(4, 186);
+        _lblSshPassword.Location = new Point(4, 185);
         _lblSshPassword.Margin = new Padding(4, 6, 4, 6);
         _lblSshPassword.Name = "_lblSshPassword";
-        _lblSshPassword.Size = new Size(129, 25);
+        _lblSshPassword.Size = new Size(153, 23);
         _lblSshPassword.TabIndex = 8;
         _lblSshPassword.Text = "Password SSH:";
         // 
@@ -631,7 +635,7 @@ partial class Form1
         _panelSshPassword.Controls.Add(_txtSshPassword);
         _panelSshPassword.Controls.Add(_btnShowPassword);
         _panelSshPassword.Dock = DockStyle.Fill;
-        _panelSshPassword.Location = new Point(247, 180);
+        _panelSshPassword.Location = new Point(247, 178);
         _panelSshPassword.Margin = new Padding(4);
         _panelSshPassword.Name = "_panelSshPassword";
         _panelSshPassword.Size = new Size(352, 37);
@@ -644,9 +648,8 @@ partial class Form1
         _txtSshPassword.BorderStyle = BorderStyle.None;
         _txtSshPassword.ForeColor = Color.FromArgb(0, 255, 255);
         _txtSshPassword.Location = new Point(3, 3);
-        _txtSshPassword.Multiline = false;
         _txtSshPassword.Name = "_txtSshPassword";
-        _txtSshPassword.Size = new Size(310, 31);
+        _txtSshPassword.Size = new Size(310, 24);
         _txtSshPassword.TabIndex = 0;
         _txtSshPassword.UseSystemPasswordChar = true;
         // 
@@ -660,30 +663,31 @@ partial class Form1
         _btnShowPassword.ForeColor = Color.FromArgb(0, 255, 255);
         _btnShowPassword.Location = new Point(316, 0);
         _btnShowPassword.Name = "_btnShowPassword";
-        _btnShowPassword.Size = new Size(36, 37);
+        _btnShowPassword.Size = new Size(36, 0);
         _btnShowPassword.TabIndex = 1;
         _btnShowPassword.TabStop = false;
         _btnShowPassword.Text = "👁";
+        _btnShowPassword.UseVisualStyleBackColor = false;
         // 
         // _chkRememberSshPassword
         // 
         _chkRememberSshPassword.AutoSize = true;
-        _chkRememberSshPassword.Location = new Point(247, 225);
+        _chkRememberSshPassword.ForeColor = Color.FromArgb(0, 255, 65);
+        _chkRememberSshPassword.Location = new Point(247, 223);
         _chkRememberSshPassword.Margin = new Padding(4);
         _chkRememberSshPassword.Name = "_chkRememberSshPassword";
-        _chkRememberSshPassword.Size = new Size(258, 29);
+        _chkRememberSshPassword.Size = new Size(344, 27);
         _chkRememberSshPassword.TabIndex = 10;
         _chkRememberSshPassword.Text = "Recordar clave SSH (cifrada)";
-        _chkRememberSshPassword.ForeColor = Color.FromArgb(0, 255, 65);
         // 
         // _lblSshKeyPath
         // 
         _lblSshKeyPath.Anchor = AnchorStyles.Left;
         _lblSshKeyPath.AutoSize = true;
-        _lblSshKeyPath.Location = new Point(4, 265);
+        _lblSshKeyPath.Location = new Point(4, 262);
         _lblSshKeyPath.Margin = new Padding(4, 6, 4, 6);
         _lblSshKeyPath.Name = "_lblSshKeyPath";
-        _lblSshKeyPath.Size = new Size(92, 25);
+        _lblSshKeyPath.Size = new Size(131, 23);
         _lblSshKeyPath.TabIndex = 11;
         _lblSshKeyPath.Text = "Ruta llave:";
         // 
@@ -693,7 +697,7 @@ partial class Form1
         _txtSshKeyPath.BorderStyle = BorderStyle.FixedSingle;
         _txtSshKeyPath.Dock = DockStyle.Fill;
         _txtSshKeyPath.ForeColor = Color.FromArgb(0, 255, 255);
-        _txtSshKeyPath.Location = new Point(247, 262);
+        _txtSshKeyPath.Location = new Point(247, 258);
         _txtSshKeyPath.Margin = new Padding(4);
         _txtSshKeyPath.Name = "_txtSshKeyPath";
         _txtSshKeyPath.Size = new Size(352, 31);
@@ -703,31 +707,31 @@ partial class Form1
         // _chkSshBatchMode
         // 
         _chkSshBatchMode.AutoSize = true;
-        _chkSshBatchMode.Location = new Point(247, 301);
+        _chkSshBatchMode.ForeColor = Color.FromArgb(0, 255, 65);
+        _chkSshBatchMode.Location = new Point(247, 297);
         _chkSshBatchMode.Margin = new Padding(4);
         _chkSshBatchMode.Name = "_chkSshBatchMode";
-        _chkSshBatchMode.Size = new Size(267, 29);
+        _chkSshBatchMode.Size = new Size(322, 27);
         _chkSshBatchMode.TabIndex = 13;
         _chkSshBatchMode.Text = "SshBatchMode (sin prompts)";
-        _chkSshBatchMode.ForeColor = Color.FromArgb(0, 255, 65);
         // 
         // _chkInteractiveWindowForPassword
         // 
         _chkInteractiveWindowForPassword.AutoSize = true;
         _chkInteractiveWindowForPassword.Checked = true;
         _chkInteractiveWindowForPassword.CheckState = CheckState.Checked;
-        _chkInteractiveWindowForPassword.Location = new Point(247, 338);
+        _chkInteractiveWindowForPassword.ForeColor = Color.FromArgb(0, 255, 65);
+        _chkInteractiveWindowForPassword.Location = new Point(247, 332);
         _chkInteractiveWindowForPassword.Margin = new Padding(4);
         _chkInteractiveWindowForPassword.Name = "_chkInteractiveWindowForPassword";
-        _chkInteractiveWindowForPassword.Size = new Size(351, 29);
+        _chkInteractiveWindowForPassword.Size = new Size(352, 27);
         _chkInteractiveWindowForPassword.TabIndex = 14;
         _chkInteractiveWindowForPassword.Text = "Abrir terminal interactiva para Password";
-        _chkInteractiveWindowForPassword.ForeColor = Color.FromArgb(0, 255, 65);
         // 
         // _grpOps
         // 
-        _grpOps.Controls.Add(_tblOps);
         _grpOps.BackColor = Color.FromArgb(18, 18, 23);
+        _grpOps.Controls.Add(_tblOps);
         _grpOps.Dock = DockStyle.Fill;
         _grpOps.FlatStyle = FlatStyle.Flat;
         _grpOps.Font = new Font("Consolas", 11F, FontStyle.Bold);
@@ -745,6 +749,7 @@ partial class Form1
         // 
         _tblOps.AutoSize = true;
         _tblOps.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+        _tblOps.BackColor = Color.FromArgb(18, 18, 23);
         _tblOps.ColumnCount = 2;
         _tblOps.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140F));
         _tblOps.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
@@ -755,11 +760,10 @@ partial class Form1
         _tblOps.Controls.Add(_lblTenant, 0, 2);
         _tblOps.Controls.Add(_txtTenant, 1, 2);
         _tblOps.Controls.Add(_panelSkipFlags, 1, 3);
-        _tblOps.BackColor = Color.FromArgb(18, 18, 23);
         _tblOps.Dock = DockStyle.Top;
-        _tblOps.Font = new Font("Consolas", 10F, FontStyle.Regular);
+        _tblOps.Font = new Font("Consolas", 10F);
         _tblOps.ForeColor = Color.FromArgb(0, 255, 65);
-        _tblOps.Location = new Point(10, 36);
+        _tblOps.Location = new Point(10, 38);
         _tblOps.Margin = new Padding(4, 5, 4, 5);
         _tblOps.Name = "_tblOps";
         _tblOps.RowCount = 4;
@@ -767,7 +771,7 @@ partial class Form1
         _tblOps.RowStyles.Add(new RowStyle());
         _tblOps.RowStyles.Add(new RowStyle());
         _tblOps.RowStyles.Add(new RowStyle());
-        _tblOps.Size = new Size(497, 194);
+        _tblOps.Size = new Size(497, 182);
         _tblOps.TabIndex = 0;
         // 
         // _lblDeployTarget
@@ -777,7 +781,7 @@ partial class Form1
         _lblDeployTarget.Location = new Point(4, 6);
         _lblDeployTarget.Margin = new Padding(4, 6, 4, 6);
         _lblDeployTarget.Name = "_lblDeployTarget";
-        _lblDeployTarget.Size = new Size(85, 50);
+        _lblDeployTarget.Size = new Size(109, 46);
         _lblDeployTarget.TabIndex = 0;
         _lblDeployTarget.Text = "Objetivo deploy:";
         // 
@@ -792,18 +796,17 @@ partial class Form1
         _cmbDeployTarget.Location = new Point(144, 4);
         _cmbDeployTarget.Margin = new Padding(4);
         _cmbDeployTarget.Name = "_cmbDeployTarget";
-        _cmbDeployTarget.SelectedIndex = 0;
-        _cmbDeployTarget.Size = new Size(349, 33);
+        _cmbDeployTarget.Size = new Size(349, 31);
         _cmbDeployTarget.TabIndex = 1;
         // 
         // _lblMigrationMode
         // 
         _lblMigrationMode.Anchor = AnchorStyles.Left;
         _lblMigrationMode.AutoSize = true;
-        _lblMigrationMode.Location = new Point(4, 68);
+        _lblMigrationMode.Location = new Point(4, 64);
         _lblMigrationMode.Margin = new Padding(4, 6, 4, 6);
         _lblMigrationMode.Name = "_lblMigrationMode";
-        _lblMigrationMode.Size = new Size(95, 50);
+        _lblMigrationMode.Size = new Size(120, 46);
         _lblMigrationMode.TabIndex = 2;
         _lblMigrationMode.Text = "Modo migración:";
         // 
@@ -815,21 +818,20 @@ partial class Form1
         _cmbMigrationMode.FlatStyle = FlatStyle.Flat;
         _cmbMigrationMode.ForeColor = Color.FromArgb(0, 255, 255);
         _cmbMigrationMode.Items.AddRange(new object[] { "B - Host + todos los tenants", "H - Solo Host", "T - Solo todos los tenants", "U - Un tenant especifico", "N - Ninguna" });
-        _cmbMigrationMode.Location = new Point(144, 66);
+        _cmbMigrationMode.Location = new Point(144, 62);
         _cmbMigrationMode.Margin = new Padding(4);
         _cmbMigrationMode.Name = "_cmbMigrationMode";
-        _cmbMigrationMode.SelectedIndex = 0;
-        _cmbMigrationMode.Size = new Size(349, 33);
+        _cmbMigrationMode.Size = new Size(349, 31);
         _cmbMigrationMode.TabIndex = 3;
         // 
         // _lblTenant
         // 
         _lblTenant.Anchor = AnchorStyles.Left;
         _lblTenant.AutoSize = true;
-        _lblTenant.Location = new Point(4, 130);
+        _lblTenant.Location = new Point(4, 122);
         _lblTenant.Margin = new Padding(4, 6, 4, 6);
         _lblTenant.Name = "_lblTenant";
-        _lblTenant.Size = new Size(112, 50);
+        _lblTenant.Size = new Size(109, 46);
         _lblTenant.TabIndex = 4;
         _lblTenant.Text = "Tenant (solo U):";
         // 
@@ -839,7 +841,7 @@ partial class Form1
         _txtTenant.BorderStyle = BorderStyle.FixedSingle;
         _txtTenant.Dock = DockStyle.Fill;
         _txtTenant.ForeColor = Color.FromArgb(0, 255, 255);
-        _txtTenant.Location = new Point(144, 128);
+        _txtTenant.Location = new Point(144, 120);
         _txtTenant.Margin = new Padding(4);
         _txtTenant.Name = "_txtTenant";
         _txtTenant.Size = new Size(349, 31);
@@ -850,7 +852,7 @@ partial class Form1
         _panelSkipFlags.AutoSize = true;
         _panelSkipFlags.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _panelSkipFlags.Dock = DockStyle.Fill;
-        _panelSkipFlags.Location = new Point(140, 190);
+        _panelSkipFlags.Location = new Point(140, 178);
         _panelSkipFlags.Margin = new Padding(0, 4, 0, 4);
         _panelSkipFlags.Name = "_panelSkipFlags";
         _panelSkipFlags.Size = new Size(357, 1);
@@ -858,8 +860,8 @@ partial class Form1
         // 
         // _grpLog
         // 
-        _grpLog.Controls.Add(_txtLog);
         _grpLog.BackColor = Color.FromArgb(18, 18, 23);
+        _grpLog.Controls.Add(_txtLog);
         _grpLog.Dock = DockStyle.Fill;
         _grpLog.ForeColor = Color.FromArgb(0, 255, 255);
         _grpLog.Location = new Point(29, 429);
@@ -888,22 +890,22 @@ partial class Form1
         // 
         // _progressBar
         // 
+        _progressBar.BackColor = Color.FromArgb(18, 18, 23);
         _progressBar.Dock = DockStyle.Fill;
+        _progressBar.ForeColor = Color.FromArgb(0, 255, 255);
         _progressBar.Location = new Point(40, 911);
         _progressBar.Margin = new Padding(20, 0, 20, 0);
         _progressBar.MarqueeAnimationSpeed = 30;
         _progressBar.Name = "_progressBar";
         _progressBar.Size = new Size(1749, 18);
         _progressBar.Style = ProgressBarStyle.Marquee;
-        _progressBar.BackColor = Color.FromArgb(18, 18, 23);
-        _progressBar.ForeColor = Color.FromArgb(0, 255, 255);
         _progressBar.TabIndex = 4;
         _progressBar.Visible = false;
         // 
         // _panelStatus
         // 
-        _panelStatus.Controls.Add(_lblStatus);
         _panelStatus.BackColor = Color.FromArgb(18, 18, 23);
+        _panelStatus.Controls.Add(_lblStatus);
         _panelStatus.Dock = DockStyle.Fill;
         _panelStatus.Location = new Point(40, 933);
         _panelStatus.Margin = new Padding(20, 4, 20, 4);
@@ -928,11 +930,10 @@ partial class Form1
         _btnRun.BackColor = Color.FromArgb(0, 40, 0);
         _btnRun.Cursor = Cursors.Hand;
         _btnRun.FlatAppearance.BorderColor = Color.FromArgb(0, 255, 65);
-        _btnRun.FlatAppearance.BorderSize = 1;
         _btnRun.FlatStyle = FlatStyle.Flat;
         _btnRun.Font = new Font("Consolas", 10F, FontStyle.Bold);
         _btnRun.ForeColor = Color.FromArgb(0, 255, 65);
-        _btnRun.Location = new Point(280, 20);
+        _btnRun.Location = new Point(770, 20);
         _btnRun.Margin = new Padding(0, 10, 6, 10);
         _btnRun.Name = "_btnRun";
         _btnRun.Size = new Size(140, 44);
@@ -945,7 +946,6 @@ partial class Form1
         _btnAdvanced.BackColor = Color.FromArgb(30, 58, 70);
         _btnAdvanced.Cursor = Cursors.Hand;
         _btnAdvanced.FlatAppearance.BorderColor = Color.FromArgb(100, 220, 255);
-        _btnAdvanced.FlatAppearance.BorderSize = 1;
         _btnAdvanced.FlatStyle = FlatStyle.Flat;
         _btnAdvanced.Font = new Font("Consolas", 10F, FontStyle.Bold);
         _btnAdvanced.ForeColor = Color.FromArgb(100, 220, 255);
@@ -957,16 +957,47 @@ partial class Form1
         _btnAdvanced.Text = "[ SYS.ADVANCED ]";
         _btnAdvanced.UseVisualStyleBackColor = false;
         // 
+        // _btnEnvironment
+        // 
+        _btnEnvironment.BackColor = Color.FromArgb(18, 18, 23);
+        _btnEnvironment.Cursor = Cursors.Hand;
+        _btnEnvironment.FlatAppearance.BorderColor = Color.FromArgb(255, 209, 102);
+        _btnEnvironment.FlatStyle = FlatStyle.Flat;
+        _btnEnvironment.Font = new Font("Consolas", 10F, FontStyle.Bold);
+        _btnEnvironment.ForeColor = Color.FromArgb(255, 209, 102);
+        _btnEnvironment.Location = new Point(190, 20);
+        _btnEnvironment.Margin = new Padding(0, 10, 10, 10);
+        _btnEnvironment.Name = "_btnEnvironment";
+        _btnEnvironment.Size = new Size(135, 44);
+        _btnEnvironment.TabIndex = 5;
+        _btnEnvironment.Text = "ENV: STAGING";
+        _btnEnvironment.UseVisualStyleBackColor = false;
+        // 
+        // _btnControlCenter
+        // 
+        _btnControlCenter.BackColor = Color.FromArgb(18, 18, 23);
+        _btnControlCenter.Cursor = Cursors.Hand;
+        _btnControlCenter.FlatAppearance.BorderColor = Color.FromArgb(0, 255, 255);
+        _btnControlCenter.FlatStyle = FlatStyle.Flat;
+        _btnControlCenter.Font = new Font("Consolas", 10F, FontStyle.Bold);
+        _btnControlCenter.ForeColor = Color.FromArgb(0, 255, 255);
+        _btnControlCenter.Location = new Point(335, 20);
+        _btnControlCenter.Margin = new Padding(0, 10, 10, 10);
+        _btnControlCenter.Name = "_btnControlCenter";
+        _btnControlCenter.Size = new Size(145, 44);
+        _btnControlCenter.TabIndex = 6;
+        _btnControlCenter.Text = "◉ CONTROL";
+        _btnControlCenter.UseVisualStyleBackColor = false;
+        // 
         // _btnOpenScripts
         // 
         _btnOpenScripts.BackColor = Color.FromArgb(18, 18, 23);
         _btnOpenScripts.Cursor = Cursors.Hand;
         _btnOpenScripts.FlatAppearance.BorderColor = Color.FromArgb(0, 255, 255);
-        _btnOpenScripts.FlatAppearance.BorderSize = 1;
         _btnOpenScripts.FlatStyle = FlatStyle.Flat;
         _btnOpenScripts.Font = new Font("Consolas", 10F, FontStyle.Bold);
         _btnOpenScripts.ForeColor = Color.FromArgb(0, 255, 255);
-        _btnOpenScripts.Location = new Point(130, 20);
+        _btnOpenScripts.Location = new Point(620, 20);
         _btnOpenScripts.Margin = new Padding(0, 10, 10, 10);
         _btnOpenScripts.Name = "_btnOpenScripts";
         _btnOpenScripts.Size = new Size(140, 44);
@@ -979,11 +1010,10 @@ partial class Form1
         _btnOpenLog.BackColor = Color.FromArgb(30, 58, 70);
         _btnOpenLog.Cursor = Cursors.Hand;
         _btnOpenLog.FlatAppearance.BorderColor = Color.FromArgb(100, 220, 255);
-        _btnOpenLog.FlatAppearance.BorderSize = 1;
         _btnOpenLog.FlatStyle = FlatStyle.Flat;
         _btnOpenLog.Font = new Font("Consolas", 10F, FontStyle.Bold);
         _btnOpenLog.ForeColor = Color.FromArgb(100, 220, 255);
-        _btnOpenLog.Location = new Point(190, 20);
+        _btnOpenLog.Location = new Point(490, 20);
         _btnOpenLog.Margin = new Padding(0, 10, 10, 10);
         _btnOpenLog.Name = "_btnOpenLog";
         _btnOpenLog.Size = new Size(120, 44);
@@ -997,11 +1027,10 @@ partial class Form1
         _btnStop.Cursor = Cursors.Hand;
         _btnStop.Enabled = false;
         _btnStop.FlatAppearance.BorderColor = Color.FromArgb(255, 60, 60);
-        _btnStop.FlatAppearance.BorderSize = 1;
         _btnStop.FlatStyle = FlatStyle.Flat;
         _btnStop.Font = new Font("Consolas", 10F, FontStyle.Bold);
         _btnStop.ForeColor = Color.FromArgb(255, 120, 120);
-        _btnStop.Location = new Point(426, 20);
+        _btnStop.Location = new Point(916, 20);
         _btnStop.Margin = new Padding(0, 10, 6, 10);
         _btnStop.Name = "_btnStop";
         _btnStop.Size = new Size(140, 44);
@@ -1023,6 +1052,7 @@ partial class Form1
         // 
         _panelHeader.BackColor = Color.FromArgb(5, 5, 5);
         _panelHeader.Controls.Add(_flpHeaderActions);
+        _panelHeader.Controls.Add(_lblEnvironmentRisk);
         _panelHeader.Controls.Add(_lblAppTitle);
         _panelHeader.Dock = DockStyle.Top;
         _panelHeader.Location = new Point(0, 0);
@@ -1036,17 +1066,31 @@ partial class Form1
         _flpHeaderActions.AutoSize = true;
         _flpHeaderActions.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _flpHeaderActions.Controls.Add(_btnAdvanced);
+        _flpHeaderActions.Controls.Add(_btnEnvironment);
+        _flpHeaderActions.Controls.Add(_btnControlCenter);
         _flpHeaderActions.Controls.Add(_btnOpenLog);
         _flpHeaderActions.Controls.Add(_btnOpenScripts);
         _flpHeaderActions.Controls.Add(_btnRun);
         _flpHeaderActions.Controls.Add(_btnStop);
         _flpHeaderActions.Dock = DockStyle.Right;
-        _flpHeaderActions.Location = new Point(1055, 0);
+        _flpHeaderActions.Location = new Point(755, 0);
         _flpHeaderActions.Name = "_flpHeaderActions";
         _flpHeaderActions.Padding = new Padding(0, 10, 12, 10);
-        _flpHeaderActions.Size = new Size(774, 64);
+        _flpHeaderActions.Size = new Size(1074, 64);
         _flpHeaderActions.TabIndex = 2;
         _flpHeaderActions.WrapContents = false;
+        // 
+        // _lblEnvironmentRisk
+        // 
+        _lblEnvironmentRisk.AutoSize = true;
+        _lblEnvironmentRisk.BackColor = Color.FromArgb(5, 5, 5);
+        _lblEnvironmentRisk.Font = new Font("Consolas", 10F, FontStyle.Bold);
+        _lblEnvironmentRisk.ForeColor = Color.FromArgb(255, 209, 102);
+        _lblEnvironmentRisk.Location = new Point(467, 20);
+        _lblEnvironmentRisk.Name = "_lblEnvironmentRisk";
+        _lblEnvironmentRisk.Size = new Size(153, 23);
+        _lblEnvironmentRisk.TabIndex = 3;
+        _lblEnvironmentRisk.Text = "RISK: STAGING";
         // 
         // _lblAppTitle
         // 

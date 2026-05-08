@@ -3,12 +3,15 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using HolosMigratorUI.Core;
 
 namespace HolosMigratorUI;
 
 public partial class Form1 : Form
 {
+    private readonly AppStateStore _state = AppStateStore.Instance;
     private Process? _runningProcess;
+    private DateTime _currentRunStartedAt;
     private string SettingsFilePath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "HolosMigratorUI",
@@ -23,6 +26,7 @@ public partial class Form1 : Form
         ApplyUiState();
         UpdateAdvancedButtonState();
         UpdateAdvancedVisibility();
+        UpdateEnvironmentVisuals();
         FormClosing += (_, _) => SaveSettings();
         AppendLog("✅ Sistema listo. Ingresa tu Password SSH y presiona '▶ EJECUTAR' arriba a la derecha.");
     }
@@ -92,6 +96,8 @@ public partial class Form1 : Form
         _btnStop.Click += (_, _) => StopCurrentProcess();
         _btnOpenScripts.Click += (_, _) => OpenScriptsFolder();
         _btnOpenLog.Click += (_, _) => OpenLogFile();
+        _btnControlCenter.Click += (_, _) => OpenControlCenter();
+        _btnEnvironment.Click += (_, _) => CycleEnvironment();
         _btnShowPassword.Click += (_, _) =>
         {
             _txtSshPassword.UseSystemPasswordChar = !_txtSshPassword.UseSystemPasswordChar;
@@ -139,6 +145,8 @@ public partial class Form1 : Form
             AppendLog("Ya hay un proceso en ejecución.");
             return;
         }
+
+        _currentRunStartedAt = DateTime.Now;
 
         try
         {
@@ -296,6 +304,19 @@ public partial class Form1 : Form
             throw new InvalidOperationException("Tenant es requerido para modo U.");
         }
 
+        if (_state.CurrentEnvironment == DeploymentEnvironment.Production)
+        {
+            if (_chkSkipPublicChecks.Checked)
+            {
+                throw new InvalidOperationException("En Production no se permite omitir checks públicos.");
+            }
+
+            if (GetSelectedAction() == "Deploy completo" && _chkSkipMigrations.Checked)
+            {
+                throw new InvalidOperationException("En Production no se permite omitir migraciones.");
+            }
+        }
+
         if (GetEffectiveSshAuthMode() == "Password"
             && string.IsNullOrWhiteSpace(_txtSshPassword.Text)
             && !_chkInteractiveWindowForPassword.Checked)
@@ -330,8 +351,9 @@ public partial class Form1 : Form
 
         // Log del comando completo (sin contraseña)
         var safeArgs = args.Select(a =>
-            (a == sshPass && !string.IsNullOrEmpty(sshPass)) ? "***" : a);
-        AppendLog($"CMD: pwsh {string.Join(" ", safeArgs.Select(a => a.Contains(' ') ? $"\"{a}\"" : a))}");
+            (a == sshPass && !string.IsNullOrEmpty(sshPass)) ? "***" : a).ToList();
+        var cmdText = $"CMD: pwsh {string.Join(" ", safeArgs.Select(a => a.Contains(' ') ? $"\"{a}\"" : a))}";
+        AppendLog(LogSecurity.Sanitize(cmdText));
 
         var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
         _runningProcess = process;
@@ -340,7 +362,7 @@ public partial class Form1 : Form
         {
             if (e.Data != null)
             {
-                AppendLog(e.Data);
+                AppendLog(e.Data, "STDOUT");
                 this.Invoke(() => UpdateProgressFromLog(e.Data));
             }
         };
@@ -351,7 +373,7 @@ public partial class Form1 : Form
                 var clean = AnsiRegex().Replace(e.Data, string.Empty);
                 if (!string.IsNullOrWhiteSpace(clean))
                 {
-                    AppendLog("ERR: " + clean);
+                    AppendLog("ERR: " + clean, "STDERR");
                     this.Invoke(() => UpdateProgressFromLog(clean));
                 }
             }
@@ -383,6 +405,15 @@ public partial class Form1 : Form
             ? "✅  DEPLOY COMPLETADO CORRECTAMENTE"
             : $"❌  ERROR — Proceso terminó con código {process.ExitCode}. Revisa la salida arriba.";
         _panelStatus.Visible = true;
+
+        _state.AddRun(new OperationRunSummary(
+            StartedAt: _currentRunStartedAt,
+            EndedAt: DateTime.Now,
+            ExitCode: process.ExitCode,
+            Action: GetSelectedAction(),
+            DeployTarget: GetSelectedDeployTarget(),
+            MigrationMode: GetSelectedMigrationMode(),
+            Environment: _state.CurrentEnvironment));
 
         _runningProcess = null;
         _btnRun.Enabled = true;
@@ -526,16 +557,26 @@ public partial class Form1 : Form
     private string LogFilePath =>
         Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "migrator_logs.txt"));
 
-    private void AppendLog(string message)
+    private void AppendLog(string message, string source = "UI", bool evaluatePolicy = true)
     {
         if (InvokeRequired)
         {
-            BeginInvoke(() => AppendLog(message));
+            BeginInvoke(() => AppendLog(message, source, evaluatePolicy));
             return;
         }
 
-        string logLine = $"[{DateTime.Now:HH:mm:ss}] {message}";
+        var now = DateTime.Now;
+        var sanitizedMessage = LogSecurity.Sanitize(message);
+        string logLine = $"[{now:HH:mm:ss}] {sanitizedMessage}";
         _txtLog.AppendText(logLine + Environment.NewLine);
+
+        var severity = LogClassifier.Classify(sanitizedMessage);
+        _state.AddLog(new LogEntry(now, source, message, sanitizedMessage, severity));
+
+        if (evaluatePolicy)
+        {
+            EvaluateRuntimePolicy(sanitizedMessage);
+        }
 
         try
         {
@@ -544,6 +585,22 @@ public partial class Form1 : Form
             File.AppendAllText(LogFilePath, logLine + Environment.NewLine, Encoding.UTF8);
         }
         catch { /* no bloquear UI si hay problema de permisos */ }
+    }
+
+    private void EvaluateRuntimePolicy(string line)
+    {
+        var results = EnvironmentPolicy.ValidateRuntimeLine(_state.CurrentEnvironment, line);
+        foreach (var r in results)
+        {
+            _state.AddAlert(new AlertEvent(
+                CreatedAt: DateTime.Now,
+                Rule: "EnvironmentPolicy",
+                Severity: r.IsBlocking ? "Critical" : "Warning",
+                Message: r.Message,
+                IsActive: true));
+
+            AppendLog($"POLICY {(r.IsBlocking ? "BLOCK" : "WARN")}: {r.Message}", "POLICY", false);
+        }
     }
 
     private void OpenLogFile()
@@ -594,6 +651,14 @@ public partial class Form1 : Form
             {
                 _txtSshPassword.Text = Unprotect(settings.EncryptedSshPassword);
             }
+
+            if (!string.IsNullOrWhiteSpace(settings.Environment)
+                && Enum.TryParse<DeploymentEnvironment>(settings.Environment, out var env))
+            {
+                _state.CurrentEnvironment = env;
+            }
+
+            UpdateEnvironmentVisuals();
         }
         catch
         {
@@ -613,7 +678,8 @@ public partial class Form1 : Form
                 RememberSshPassword = _chkRememberSshPassword.Checked,
                 EncryptedSshPassword = _chkRememberSshPassword.Checked && !string.IsNullOrWhiteSpace(_txtSshPassword.Text)
                     ? Protect(_txtSshPassword.Text)
-                    : null
+                    : null,
+                Environment = _state.CurrentEnvironment.ToString()
             };
 
             var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
@@ -690,5 +756,44 @@ public partial class Form1 : Form
         public bool RememberSshPassword { get; set; }
 
         public string? EncryptedSshPassword { get; set; }
+
+        public string? Environment { get; set; }
+    }
+
+    private void OpenControlCenter()
+    {
+        using var center = new ControlCenterForm(
+            hostProvider: () => _txtServerHost.Text.Trim(),
+            sshPortProvider: () => (int)_numSshPort.Value);
+
+        center.ShowDialog(this);
+        UpdateEnvironmentVisuals();
+    }
+
+    private void CycleEnvironment()
+    {
+        var next = _state.CurrentEnvironment switch
+        {
+            DeploymentEnvironment.Development => DeploymentEnvironment.Staging,
+            DeploymentEnvironment.Staging => DeploymentEnvironment.Production,
+            _ => DeploymentEnvironment.Development
+        };
+
+        _state.CurrentEnvironment = next;
+        UpdateEnvironmentVisuals();
+        SaveSettings();
+        AppendLog($"Entorno activo: {_state.CurrentEnvironment}", "ENV", false);
+    }
+
+    private void UpdateEnvironmentVisuals()
+    {
+        var profile = EnvironmentPolicy.GetProfile(_state.CurrentEnvironment);
+        _btnEnvironment.Text = $"ENV: {profile.RiskLabel}";
+        _lblEnvironmentRisk.Text = $"RISK: {profile.RiskLabel}";
+
+        var color = ColorTranslator.FromHtml(profile.RiskColor);
+        _btnEnvironment.ForeColor = color;
+        _btnEnvironment.FlatAppearance.BorderColor = color;
+        _lblEnvironmentRisk.ForeColor = color;
     }
 }
