@@ -7,7 +7,7 @@ using HolosMigratorUI.Core;
 
 namespace HolosMigratorUI;
 
-public partial class Form1 : Form
+public partial class MainShellForm : Form
 {
     private readonly AppStateStore _state = AppStateStore.Instance;
     private Process? _runningProcess;
@@ -17,7 +17,7 @@ public partial class Form1 : Form
         "HolosMigratorUI",
         "settings.json");
 
-    public Form1()
+    public MainShellForm()
     {
         InitializeComponent();
         BindEvents();

@@ -1,6 +1,6 @@
 namespace HolosMigratorUI;
 
-partial class Form1
+partial class MainShellForm
 {
     /// <summary>
     ///  Required designer variable.
@@ -1116,7 +1116,7 @@ partial class Form1
         Controls.Add(_panelHeader);
         Margin = new Padding(4, 5, 4, 5);
         MinimumSize = new Size(1000, 700);
-        Name = "Form1";
+        Name = "MainShellForm";
         StartPosition = FormStartPosition.CenterScreen;
         Text = "Holos Migrator";
         _tableRoot.ResumeLayout(false);
