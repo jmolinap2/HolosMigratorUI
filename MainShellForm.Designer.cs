@@ -51,13 +51,13 @@ partial class MainShellForm
     private ComboBox _cmbSshAuth;
     private Panel _panelSshPassword;
     private TextBox _txtSshPassword;
-    private Button _btnShowPassword;
+    private HolosMigratorUI.UI.AnimatedRoundedButton _btnShowPassword;
     private Panel _panelHeader;
     private Label _lblAppTitle;
     private Label _lblEnvironmentRisk;
     private FlowLayoutPanel _flpHeaderActions;
-    private Button _btnEnvironment;
-    private Button _btnControlCenter;
+
+    private HolosMigratorUI.UI.AnimatedRoundedButton _btnControlCenter;
     private TextBox _txtSshKeyPath;
     private CheckBox _chkRememberSshPassword;
     private CheckBox _chkSshBatchMode;
@@ -67,11 +67,11 @@ partial class MainShellForm
     private CheckBox _chkSkipBuild;
     private CheckBox _chkSkipPublicChecks;
 
-    private Button _btnRun;
-    private Button _btnAdvanced;
-    private Button _btnStop;
-    private Button _btnOpenScripts;
-    private Button _btnOpenLog;
+    private HolosMigratorUI.UI.AnimatedRoundedButton _btnRun;
+    private HolosMigratorUI.UI.AnimatedRoundedButton _btnAdvanced;
+    private HolosMigratorUI.UI.AnimatedRoundedButton _btnStop;
+    private HolosMigratorUI.UI.AnimatedRoundedButton _btnOpenScripts;
+    private HolosMigratorUI.UI.AnimatedRoundedButton _btnOpenLog;
     private TextBox _txtLog;
     private ProgressBar _progressBar;
     private Panel _panelStatus;
@@ -134,7 +134,7 @@ partial class MainShellForm
         _lblSshPassword = new Label();
         _panelSshPassword = new Panel();
         _txtSshPassword = new TextBox();
-        _btnShowPassword = new Button();
+        _btnShowPassword = new HolosMigratorUI.UI.AnimatedRoundedButton();
         _chkRememberSshPassword = new CheckBox();
         _lblSshKeyPath = new Label();
         _txtSshKeyPath = new TextBox();
@@ -155,13 +155,13 @@ partial class MainShellForm
         _progressBar = new ProgressBar();
         _panelStatus = new Panel();
         _lblStatus = new Label();
-        _btnRun = new Button();
-        _btnAdvanced = new Button();
-        _btnEnvironment = new Button();
-        _btnControlCenter = new Button();
-        _btnOpenScripts = new Button();
-        _btnOpenLog = new Button();
-        _btnStop = new Button();
+        _btnRun = new HolosMigratorUI.UI.AnimatedRoundedButton();
+        _btnAdvanced = new HolosMigratorUI.UI.AnimatedRoundedButton();
+
+        _btnControlCenter = new HolosMigratorUI.UI.AnimatedRoundedButton();
+        _btnOpenScripts = new HolosMigratorUI.UI.AnimatedRoundedButton();
+        _btnOpenLog = new HolosMigratorUI.UI.AnimatedRoundedButton();
+        _btnStop = new HolosMigratorUI.UI.AnimatedRoundedButton();
         _panelActions = new FlowLayoutPanel();
         _panelHeader = new Panel();
         _flpHeaderActions = new FlowLayoutPanel();
@@ -663,7 +663,7 @@ partial class MainShellForm
         _lblSshPassword.Name = "_lblSshPassword";
         _lblSshPassword.Size = new Size(153, 23);
         _lblSshPassword.TabIndex = 8;
-        _lblSshPassword.Text = "Password SSH:";
+        _lblSshPassword.Text = "Password/Passphrase:";
         // 
         // _panelSshPassword
         // 
@@ -1007,21 +1007,21 @@ partial class MainShellForm
         _btnAdvanced.Text = "[ SYS.ADVANCED ]";
         _btnAdvanced.UseVisualStyleBackColor = false;
         // 
-        // _btnEnvironment
+
         // 
-        _btnEnvironment.BackColor = Color.FromArgb(18, 18, 23);
-        _btnEnvironment.Cursor = Cursors.Hand;
-        _btnEnvironment.FlatAppearance.BorderColor = Color.FromArgb(255, 209, 102);
-        _btnEnvironment.FlatStyle = FlatStyle.Flat;
-        _btnEnvironment.Font = new Font("Consolas", 10F, FontStyle.Bold);
-        _btnEnvironment.ForeColor = Color.FromArgb(255, 209, 102);
-        _btnEnvironment.Location = new Point(190, 24);
-        _btnEnvironment.Margin = new Padding(0, 10, 10, 10);
-        _btnEnvironment.Name = "_btnEnvironment";
-        _btnEnvironment.Size = new Size(240, 44);
-        _btnEnvironment.TabIndex = 5;
-        _btnEnvironment.Text = "AMBIENTE: STAGING";
-        _btnEnvironment.UseVisualStyleBackColor = false;
+
+
+
+
+
+
+
+
+
+
+
+
+
         // 
         // _btnControlCenter
         // 
@@ -1115,7 +1115,7 @@ partial class MainShellForm
         _flpHeaderActions.AutoSize = true;
         _flpHeaderActions.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _flpHeaderActions.Controls.Add(_btnAdvanced);
-        _flpHeaderActions.Controls.Add(_btnEnvironment);
+
         _flpHeaderActions.Controls.Add(_btnControlCenter);
         _flpHeaderActions.Controls.Add(_btnOpenLog);
         _flpHeaderActions.Controls.Add(_btnOpenScripts);

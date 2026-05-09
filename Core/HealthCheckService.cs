@@ -183,10 +183,12 @@ public static class HealthCheckService
             "bash -lc \"LC_ALL=C; " +
             "echo '[HOST]'; " +
             "printenv | egrep '^(ASPNETCORE_ENVIRONMENT|DOTNET_ENVIRONMENT|NODE_ENV|HOLOS_|TZ|SQL|ConnectionStrings__)=' | sort || true; " +
-            "for c in holos-api holos-front holos-sql; do " +
-            "if docker ps -a --format '{{.Names}}' | grep -qx $c; then " +
+            "for pair in 'holos-api:holos-api|holos_api|api' 'holos-front:holos-front|holos_front|front' 'holos-sql:holos-sql|holos_sql|sql'; do " +
+            "c=${pair%%:*}; regex=${pair#*:}; " +
+            "resolved=$(docker ps -a --format '{{.Names}}' | grep -Ei -m1 \"$regex\" || true); " +
+            "if [ -n \"$resolved\" ]; then " +
             "echo; echo \"[CONTAINER:$c]\"; " +
-            "docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' $c " +
+            "docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' \"$resolved\" " +
             "| egrep '^(ASPNETCORE_ENVIRONMENT|DOTNET_ENVIRONMENT|NODE_ENV|HOLOS_|TZ|SQL|ConnectionStrings__)=' | sort || true; " +
             "fi; done\"";
 
@@ -243,11 +245,25 @@ public static class HealthCheckService
         {
             try
             {
-                keyAuth = new PrivateKeyAuthenticationMethod(user, new PrivateKeyFile(keyPath));
+                if (!string.IsNullOrWhiteSpace(password))
+                {
+                    keyAuth = new PrivateKeyAuthenticationMethod(user, new PrivateKeyFile(keyPath, password));
+                }
+                else
+                {
+                    keyAuth = new PrivateKeyAuthenticationMethod(user, new PrivateKeyFile(keyPath));
+                }
             }
             catch
             {
-                keyAuth = null;
+                try
+                {
+                    keyAuth = new PrivateKeyAuthenticationMethod(user, new PrivateKeyFile(keyPath));
+                }
+                catch
+                {
+                    keyAuth = null;
+                }
             }
         }
 

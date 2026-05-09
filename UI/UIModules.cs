@@ -255,44 +255,28 @@ public class LogCenterUserControl : UserControl
         return value.Trim();
     }
 
+    private void InitializeComponent()
+    {
+
+    }
+
     private static string GetLocalMigratorLogPath()
     {
         return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "migrator_logs.txt"));
     }
 }
 
-public sealed class SettingsAppliedEventArgs : EventArgs
-{
-    public SettingsAppliedEventArgs(DeploymentEnvironment environment, string? presetName)
-    {
-        Environment = environment;
-        PresetName = presetName ?? string.Empty;
-    }
-
-    public DeploymentEnvironment Environment { get; }
-
-    public string PresetName { get; }
-}
-
 public class SettingsUserControl : UserControl
 {
-    private readonly AppStateStore _state = AppStateStore.Instance;
     private readonly Func<string> _hostProvider;
     private readonly Func<int> _sshPortProvider;
     private readonly Func<string> _serverUserProvider;
     private readonly Func<string> _sshKeyPathProvider;
     private readonly Func<string> _sshPasswordProvider;
-    private readonly Func<string> _runtimeModeProvider;
-
-    private ComboBox _cmbEnv = new() { Width = 200, DropDownStyle = ComboBoxStyle.DropDownList };
-    private ComboBox _cmbPreset = new() { Width = 300, DropDownStyle = ComboBoxStyle.DropDownList };
     private DataGridView _gridEnv = new();
-    private Label _lblRuntime = new();
-
-    public event EventHandler<SettingsAppliedEventArgs>? OnSettingsApplied;
 
     public SettingsUserControl()
-        : this(() => string.Empty, () => 22, () => string.Empty, () => string.Empty, () => string.Empty, () => "DESCONOCIDO")
+        : this(() => string.Empty, () => 22, () => string.Empty, () => string.Empty, () => string.Empty)
     {
     }
 
@@ -301,64 +285,25 @@ public class SettingsUserControl : UserControl
         Func<int> sshPortProvider,
         Func<string> serverUserProvider,
         Func<string> sshKeyPathProvider,
-        Func<string> sshPasswordProvider,
-        Func<string> runtimeModeProvider)
+        Func<string> sshPasswordProvider)
     {
         _hostProvider = hostProvider;
         _sshPortProvider = sshPortProvider;
         _serverUserProvider = serverUserProvider;
         _sshKeyPathProvider = sshKeyPathProvider;
         _sshPasswordProvider = sshPasswordProvider;
-        _runtimeModeProvider = runtimeModeProvider;
 
         BackColor = Color.FromArgb(9, 9, 11);
         ForeColor = Color.Cyan;
 
-        _cmbEnv.Items.AddRange(Enum.GetNames<DeploymentEnvironment>());
-        _cmbEnv.SelectedItem = _state.CurrentEnvironment.ToString();
-        _cmbPreset.Items.AddRange(_state.Presets.Select(p => p.Name).ToArray());
-
-        if (_cmbPreset.Items.Count > 0)
-        {
-            _cmbPreset.SelectedIndex = 0;
-        }
-
         _gridEnv.Dock = DockStyle.Fill;
         UIHelper.AplicarEstiloModernoTabla(_gridEnv);
 
-        _lblRuntime.Dock = DockStyle.Fill;
-        _lblRuntime.Font = new Font("Segoe UI Semibold", 10F, FontStyle.Bold);
-        _lblRuntime.ForeColor = Color.FromArgb(177, 227, 255);
-        _lblRuntime.TextAlign = ContentAlignment.MiddleLeft;
-        UpdateRuntimeLabel();
-
-        var btnApply = new Button
-        {
-            Text = "Aplicar configuración al panel de Operaciones",
-            FlatStyle = FlatStyle.Flat,
-            Width = 380,
-            Height = 40,
-            ForeColor = Color.FromArgb(0, 255, 255),
-            BackColor = Color.FromArgb(14, 40, 52)
-        };
-        btnApply.FlatAppearance.BorderColor = Color.FromArgb(0, 188, 221);
-        btnApply.Click += (_, _) =>
-        {
-            if (_cmbEnv.SelectedItem is string ev && Enum.TryParse<DeploymentEnvironment>(ev, out var ep)) _state.CurrentEnvironment = ep;
-
-            OnSettingsApplied?.Invoke(this, new SettingsAppliedEventArgs(
-                _state.CurrentEnvironment,
-                _cmbPreset.SelectedItem?.ToString()));
-
-            UpdateRuntimeLabel();
-            MessageBox.Show("Configuración aplicada.\n- Preset: plantilla de ejecución\n- Entorno: objetivo de despliegue", "Configuración aplicada", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        };
-
         var btnRefreshEnv = new Button
         {
-            Text = "Ver variables de entorno del VPS",
+            Text = "Cargar variables del VPS",
             FlatStyle = FlatStyle.Flat,
-            Width = 300,
+            Width = 250,
             Height = 36,
             ForeColor = Color.FromArgb(150, 237, 255),
             BackColor = Color.FromArgb(19, 47, 71)
@@ -380,7 +325,7 @@ public class SettingsUserControl : UserControl
 
         var infoText = new Label
         {
-            Text = "Preset = plantilla de operación (acción/migración/checks). Entorno = destino de despliegue (Development/Staging/Production).",
+            Text = "Pantalla enfocada solo en variables de entorno del VPS (host y contenedores).",
             Dock = DockStyle.Top,
             Height = 32,
             ForeColor = Color.FromArgb(184, 206, 229),
@@ -389,29 +334,6 @@ public class SettingsUserControl : UserControl
             Padding = new Padding(20, 0, 20, 0),
             TextAlign = ContentAlignment.MiddleLeft
         };
-
-        var p = new TableLayoutPanel
-        {
-            Dock = DockStyle.Top,
-            Height = 178,
-            ColumnCount = 2,
-            RowCount = 5,
-            Padding = new Padding(20, 10, 20, 6)
-        };
-        p.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 250F));
-        p.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        p.RowStyles.Add(new RowStyle(SizeType.Absolute, 34F));
-        p.RowStyles.Add(new RowStyle(SizeType.Absolute, 34F));
-        p.RowStyles.Add(new RowStyle(SizeType.Absolute, 54F));
-        p.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
-        p.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-
-        p.Controls.Add(new Label { Text = "Entorno objetivo:", AutoSize = true, Anchor = AnchorStyles.Left, Font = new Font("Consolas", 11F) }, 0, 0);
-        p.Controls.Add(_cmbEnv, 1, 0);
-        p.Controls.Add(new Label { Text = "Preset operativo:", AutoSize = true, Anchor = AnchorStyles.Left, Font = new Font("Consolas", 11F) }, 0, 1);
-        p.Controls.Add(_cmbPreset, 1, 1);
-        p.Controls.Add(btnApply, 1, 2);
-        p.Controls.Add(_lblRuntime, 1, 3);
 
         var actions = new FlowLayoutPanel
         {
@@ -429,9 +351,8 @@ public class SettingsUserControl : UserControl
         envPanel.Controls.Add(actions);
 
         Controls.Add(envPanel);
-        Controls.Add(p);
         Controls.Add(infoText);
-        Controls.Add(new Label { Text = "CONFIGURACIÓN Y PRESETS", Dock = DockStyle.Top, Font = new Font("Consolas", 14, FontStyle.Bold), Height = 40, ForeColor = Color.Cyan });
+        Controls.Add(new Label { Text = "VARIABLES DE ENTORNO VPS", Dock = DockStyle.Top, Font = new Font("Consolas", 14, FontStyle.Bold), Height = 40, ForeColor = Color.Cyan });
 
         if (LicenseManager.UsageMode != LicenseUsageMode.Designtime
             && !string.IsNullOrWhiteSpace(_hostProvider())
@@ -440,11 +361,6 @@ public class SettingsUserControl : UserControl
         {
             _ = RefreshEnvironmentVariablesAsync();
         }
-    }
-
-    private void UpdateRuntimeLabel()
-    {
-        _lblRuntime.Text = $"Modo App: {_runtimeModeProvider()} | Entorno objetivo: {_state.CurrentEnvironment}";
     }
 
     private async Task RefreshEnvironmentVariablesAsync()
@@ -512,7 +428,6 @@ public class SettingsUserControl : UserControl
         }
 
         _gridEnv.DataSource = table;
-        UpdateRuntimeLabel();
     }
 
     private void ExportEnvironmentVariables()

@@ -52,26 +52,24 @@ public static class UIHelper
         grid.AlternatingRowsDefaultCellStyle.BackColor = colorFondoAlterno;
     }
 
-    public static Button CrearBotonMenu(string texto)
+    public static AnimatedRoundedButton CrearBotonMenu(string texto)
     {
-        var btn = new Button
+        var btn = new AnimatedRoundedButton
         {
             Text = texto,
-            FlatStyle = FlatStyle.Flat,
             Dock = DockStyle.Top,
-            Height = 50,
-            ForeColor = Color.FromArgb(200, 200, 210),
-            BackColor = Color.FromArgb(15, 17, 26),
-            Cursor = Cursors.Hand,
+            Height = 60,
+            ForeColor = Color.FromArgb(220, 220, 230),
+            BackColor = Color.FromArgb(20, 22, 32),
+            HoverBackColor = Color.FromArgb(43, 58, 76),
+            BorderRadius = 8,
             TextAlign = ContentAlignment.MiddleLeft,
-            Padding = new Padding(20, 0, 0, 0),
-            Font = new Font("Consolas", 11, FontStyle.Bold)
+            Padding = new Padding(25, 0, 0, 0),
+            Font = new Font("Segoe UI Semibold", 10.5F, FontStyle.Bold)
         };
-        btn.FlatAppearance.BorderSize = 0;
-        
-        btn.MouseEnter += delegate { btn.BackColor = Color.FromArgb(28, 30, 40); btn.ForeColor = Color.Cyan; };
-        btn.MouseLeave += delegate { btn.BackColor = Color.FromArgb(15, 17, 26); btn.ForeColor = Color.FromArgb(200, 200, 210); };
-        
+        // Para dar un pequeño margen lateral y no pegar el botón a los bordes
+        btn.Margin = new Padding(10, 5, 10, 5);
+
         return btn;
     }
 }
