@@ -85,6 +85,16 @@ public sealed class AppStateStore
         }
     }
 
+    public string GetServiceState(string service)
+    {
+        return _serviceState.TryGetValue(service, out var state) ? state : "unknown";
+    }
+
+    public void SetServiceState(string service, string state)
+    {
+        _serviceState[service] = state;
+    }
+
     public HealthSnapshot GetLatestHealthSnapshot(string host)
     {
         var hostReachable = !_logs.Where(l => l.Timestamp > DateTime.Now.AddMinutes(-30))

@@ -4,14 +4,18 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using HolosMigratorUI.Core;
+using HolosMigratorUI.UI;
 
 namespace HolosMigratorUI;
 
 public partial class MainShellForm : Form
 {
     private readonly AppStateStore _state = AppStateStore.Instance;
+    private readonly System.Windows.Forms.Timer _environmentStatusTimer = new() { Interval = 30000 };
     private Process? _runningProcess;
     private DateTime _currentRunStartedAt;
+    private bool _uiModulesInitialized;
+    private bool _isRefreshingEnvironmentStatus;
     private string SettingsFilePath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "HolosMigratorUI",
@@ -20,6 +24,13 @@ public partial class MainShellForm : Form
     public MainShellForm()
     {
         InitializeComponent();
+
+        if (IsDesignTime())
+        {
+            return;
+        }
+
+        InitializeUIModules();
         BindEvents();
         LoadSettings();
         LoadEnvVariables();
@@ -27,8 +38,16 @@ public partial class MainShellForm : Form
         UpdateAdvancedButtonState();
         UpdateAdvancedVisibility();
         UpdateEnvironmentVisuals();
+        InitializeEnvironmentStatusMonitoring();
+        FormClosing += (_, _) => _environmentStatusTimer.Stop();
         FormClosing += (_, _) => SaveSettings();
         AppendLog("✅ Sistema listo. Ingresa tu Password SSH y presiona '▶ EJECUTAR' arriba a la derecha.");
+    }
+
+    private static bool IsDesignTime()
+    {
+        return System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime
+            || string.Equals(Process.GetCurrentProcess().ProcessName, "devenv", StringComparison.OrdinalIgnoreCase);
     }
 
     private void LoadEnvVariables()
@@ -89,6 +108,8 @@ public partial class MainShellForm : Form
         _cmbAction.SelectedIndexChanged += (_, _) => ApplyUiState();
         _cmbSshAuth.SelectedIndexChanged += (_, _) => ApplyUiState();
         _txtSshPassword.TextChanged += (_, _) => ApplyUiState();
+        _txtServerHost.Leave += async (_, _) => await RefreshEnvironmentStatusAsync();
+        _numSshPort.ValueChanged += async (_, _) => await RefreshEnvironmentStatusAsync();
         _cmbMigrationMode.SelectedIndexChanged += (_, _) => ApplyUiState();
         _chkSkipMigrations.CheckedChanged += (_, _) => ApplyUiState();
         _btnAdvanced.Click += (_, _) => ToggleAdvancedMode();
@@ -96,7 +117,7 @@ public partial class MainShellForm : Form
         _btnStop.Click += (_, _) => StopCurrentProcess();
         _btnOpenScripts.Click += (_, _) => OpenScriptsFolder();
         _btnOpenLog.Click += (_, _) => OpenLogFile();
-        _btnControlCenter.Click += (_, _) => OpenControlCenter();
+        _btnControlCenter.Click += (_, _) => ShowOperationsModule();
         _btnEnvironment.Click += (_, _) => CycleEnvironment();
         _btnShowPassword.Click += (_, _) =>
         {
@@ -760,14 +781,88 @@ public partial class MainShellForm : Form
         public string? Environment { get; set; }
     }
 
-    private void OpenControlCenter()
+    private void InitializeUIModules()
     {
-        using var center = new ControlCenterForm(
-            hostProvider: () => _txtServerHost.Text.Trim(),
-            sshPortProvider: () => (int)_numSshPort.Value);
+        if (_uiModulesInitialized)
+        {
+            ShowOperationsModule();
+            return;
+        }
 
-        center.ShowDialog(this);
-        UpdateEnvironmentVisuals();
+        _uiModulesInitialized = true;
+        _pnlSidebar.Controls.Clear();
+
+        var btnOperations = UIHelper.CrearBotonMenu("Operations");
+        btnOperations.Click += (_, _) => ShowOperationsModule();
+        _pnlSidebar.Controls.Add(btnOperations);
+
+        var btnSettings = UIHelper.CrearBotonMenu("Settings");
+        btnSettings.Click += (_, _) =>
+        {
+            var settings = new SettingsUserControl();
+            settings.OnSettingsApplied += (_, _) =>
+            {
+                UpdateEnvironmentVisuals();
+                SaveSettings();
+                AppendLog($"Se configuró el objetivo para despliegue en entorno: {_state.CurrentEnvironment}", "ENV", false);
+            };
+            ShowModule(settings);
+        };
+        _pnlSidebar.Controls.Add(btnSettings);
+
+        var btnAlerts = UIHelper.CrearBotonMenu("Alerts");
+        btnAlerts.Click += (_, _) =>
+        {
+            var alerts = new AlertsUserControl();
+            alerts.RefreshAlerts();
+            ShowModule(alerts);
+        };
+        _pnlSidebar.Controls.Add(btnAlerts);
+
+        var btnLogs = UIHelper.CrearBotonMenu("Log Center");
+        btnLogs.Click += (_, _) =>
+        {
+            var logs = new LogCenterUserControl();
+            logs.RefreshLogs();
+            ShowModule(logs);
+        };
+        _pnlSidebar.Controls.Add(btnLogs);
+
+        var btnDashboard = UIHelper.CrearBotonMenu("Dashboard");
+        btnDashboard.Click += (_, _) =>
+        {
+            var dash = new DashboardUserControl(
+                () => _txtServerHost.Text.Trim(),
+                () => (int)_numSshPort.Value,
+                () => _txtServerUser.Text.Trim(),
+                () => GetEffectiveSshAuthMode(),
+                () => _txtSshKeyPath.Text.Trim());
+            ShowModule(dash);
+            _ = dash.RefreshDashboardAsync();
+        };
+        _pnlSidebar.Controls.Add(btnDashboard);
+
+        ShowOperationsModule();
+    }
+
+    private void ShowModule(Control module)
+    {
+        _pnlMainContent.SuspendLayout();
+        _pnlMainContent.Controls.Clear();
+        module.Dock = DockStyle.Fill;
+        _pnlMainContent.Controls.Add(module);
+        _pnlMainContent.ResumeLayout();
+    }
+
+    private void ShowOperationsModule()
+    {
+        if (_tableRoot.Parent != _pnlOperations)
+        {
+            _tableRoot.Parent?.Controls.Remove(_tableRoot);
+            _pnlOperations.Controls.Add(_tableRoot);
+        }
+
+        ShowModule(_pnlOperations);
     }
 
     private void CycleEnvironment()
@@ -782,18 +877,68 @@ public partial class MainShellForm : Form
         _state.CurrentEnvironment = next;
         UpdateEnvironmentVisuals();
         SaveSettings();
-        AppendLog($"Entorno activo: {_state.CurrentEnvironment}", "ENV", false);
+        AppendLog($"Objetivo de entorno configurado: {_state.CurrentEnvironment}", "ENV", false);
     }
 
     private void UpdateEnvironmentVisuals()
     {
         var profile = EnvironmentPolicy.GetProfile(_state.CurrentEnvironment);
-        _btnEnvironment.Text = $"ENV: {profile.RiskLabel}";
-        _lblEnvironmentRisk.Text = $"RISK: {profile.RiskLabel}";
+        _btnEnvironment.Text = $"OBJETIVO: {profile.RiskLabel}";
 
         var color = ColorTranslator.FromHtml(profile.RiskColor);
         _btnEnvironment.ForeColor = color;
         _btnEnvironment.FlatAppearance.BorderColor = color;
+        _ = RefreshEnvironmentStatusAsync();
+    }
+
+    private void InitializeEnvironmentStatusMonitoring()
+    {
+        _environmentStatusTimer.Tick += async (_, _) => await RefreshEnvironmentStatusAsync();
+        _environmentStatusTimer.Start();
+    }
+
+    private async Task RefreshEnvironmentStatusAsync()
+    {
+        if (IsDisposed || Disposing || _isRefreshingEnvironmentStatus)
+        {
+            return;
+        }
+
+        _isRefreshingEnvironmentStatus = true;
+        try
+        {
+            var profile = EnvironmentPolicy.GetProfile(_state.CurrentEnvironment);
+            var host = _txtServerHost.Text.Trim();
+            var port = (int)_numSshPort.Value;
+
+            if (string.IsNullOrWhiteSpace(host))
+            {
+                ApplyEnvironmentStatusVisuals($"VPS: HOST SIN CONFIGURAR | {profile.RiskLabel}", Color.FromArgb(170, 170, 170));
+                return;
+            }
+
+            var reachable = await HealthCheckService.IsHostReachableAsync(host, port);
+            if (reachable)
+            {
+                ApplyEnvironmentStatusVisuals($"VPS: EN LINEA | {profile.RiskLabel} | {DateTime.Now:HH:mm:ss}", Color.FromArgb(0, 220, 130));
+                return;
+            }
+
+            ApplyEnvironmentStatusVisuals($"VPS: SIN CONEXION | {profile.RiskLabel} | {DateTime.Now:HH:mm:ss}", Color.FromArgb(255, 90, 90));
+        }
+        catch
+        {
+            ApplyEnvironmentStatusVisuals("VPS: ESTADO DESCONOCIDO", Color.FromArgb(255, 170, 80));
+        }
+        finally
+        {
+            _isRefreshingEnvironmentStatus = false;
+        }
+    }
+
+    private void ApplyEnvironmentStatusVisuals(string text, Color color)
+    {
+        _lblEnvironmentRisk.Text = text;
         _lblEnvironmentRisk.ForeColor = color;
     }
 }
