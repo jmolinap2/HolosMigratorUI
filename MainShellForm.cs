@@ -12,10 +12,14 @@ public partial class MainShellForm : Form
 {
     private readonly AppStateStore _state = AppStateStore.Instance;
     private readonly System.Windows.Forms.Timer _environmentStatusTimer = new() { Interval = 30000 };
+    private readonly Label _lblRemoteRuntime = new();
     private Process? _runningProcess;
     private DateTime _currentRunStartedAt;
     private bool _uiModulesInitialized;
     private bool _isRefreshingEnvironmentStatus;
+    private string _remoteApiEnvironment = "N/D";
+    private string _remoteFrontEnvironment = "N/D";
+    private DateTime _lastRemoteEnvironmentCheckUtc = DateTime.MinValue;
     private string SettingsFilePath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "HolosMigratorUI",
@@ -37,6 +41,8 @@ public partial class MainShellForm : Form
         ApplyUiState();
         UpdateAdvancedButtonState();
         UpdateAdvancedVisibility();
+        InitializeRemoteRuntimeBadge();
+        _btnStop.Enabled = true;
         UpdateEnvironmentVisuals();
         InitializeEnvironmentStatusMonitoring();
         FormClosing += (_, _) => _environmentStatusTimer.Stop();
@@ -118,7 +124,7 @@ public partial class MainShellForm : Form
         _btnOpenScripts.Click += (_, _) => OpenScriptsFolder();
         _btnOpenLog.Click += (_, _) => OpenLogFile();
         _btnControlCenter.Click += (_, _) => ShowOperationsModule();
-        _btnEnvironment.Click += (_, _) => CycleEnvironment();
+        _btnEnvironment.Click += (_, _) => ShowSettingsModule();
         _btnShowPassword.Click += (_, _) =>
         {
             _txtSshPassword.UseSystemPasswordChar = !_txtSshPassword.UseSystemPasswordChar;
@@ -438,7 +444,7 @@ public partial class MainShellForm : Form
 
         _runningProcess = null;
         _btnRun.Enabled = true;
-        _btnStop.Enabled = false;
+        _btnStop.Enabled = true;
     }
 
     private static readonly (string Pattern, int Value)[] _progressSteps =
@@ -497,6 +503,7 @@ public partial class MainShellForm : Form
     {
         if (_runningProcess == null)
         {
+            AppendLog("No hay proceso en ejecución para detener.");
             return;
         }
 
@@ -513,7 +520,7 @@ public partial class MainShellForm : Form
         {
             _runningProcess = null;
             _btnRun.Enabled = true;
-            _btnStop.Enabled = false;
+            _btnStop.Enabled = true;
         }
     }
 
@@ -797,17 +804,7 @@ public partial class MainShellForm : Form
         _pnlSidebar.Controls.Add(btnOperations);
 
         var btnSettings = UIHelper.CrearBotonMenu("Settings");
-        btnSettings.Click += (_, _) =>
-        {
-            var settings = new SettingsUserControl();
-            settings.OnSettingsApplied += (_, _) =>
-            {
-                UpdateEnvironmentVisuals();
-                SaveSettings();
-                AppendLog($"Se configuró el objetivo para despliegue en entorno: {_state.CurrentEnvironment}", "ENV", false);
-            };
-            ShowModule(settings);
-        };
+        btnSettings.Click += (_, _) => ShowSettingsModule();
         _pnlSidebar.Controls.Add(btnSettings);
 
         var btnAlerts = UIHelper.CrearBotonMenu("Alerts");
@@ -822,7 +819,12 @@ public partial class MainShellForm : Form
         var btnLogs = UIHelper.CrearBotonMenu("Log Center");
         btnLogs.Click += (_, _) =>
         {
-            var logs = new LogCenterUserControl();
+            var logs = new LogCenterUserControl(
+                () => _txtServerHost.Text.Trim(),
+                () => (int)_numSshPort.Value,
+                () => _txtServerUser.Text.Trim(),
+                () => _txtSshKeyPath.Text.Trim(),
+                () => _txtSshPassword.Text.Trim());
             logs.RefreshLogs();
             ShowModule(logs);
         };
@@ -844,6 +846,78 @@ public partial class MainShellForm : Form
         _pnlSidebar.Controls.Add(btnDashboard);
 
         ShowOperationsModule();
+    }
+
+    private void ShowSettingsModule()
+    {
+        var settings = new SettingsUserControl(
+            () => _txtServerHost.Text.Trim(),
+            () => (int)_numSshPort.Value,
+            () => _txtServerUser.Text.Trim(),
+            () => _txtSshKeyPath.Text.Trim(),
+            () => _txtSshPassword.Text.Trim(),
+            GetRuntimeModeLabel);
+
+        settings.OnSettingsApplied += (_, e) =>
+        {
+            _state.CurrentEnvironment = e.Environment;
+            ApplyPresetToOperations(e.PresetName);
+            ApplyUiState();
+            UpdateEnvironmentVisuals();
+            SaveSettings();
+            AppendLog($"Configuración aplicada. Entorno objetivo: {_state.CurrentEnvironment}. Preset: {e.PresetName}", "ENV", false);
+        };
+
+        ShowModule(settings);
+    }
+
+    private void ApplyPresetToOperations(string presetName)
+    {
+        if (string.IsNullOrWhiteSpace(presetName))
+        {
+            return;
+        }
+
+        var preset = _state.Presets.FirstOrDefault(p => p.Name.Equals(presetName, StringComparison.OrdinalIgnoreCase));
+        if (preset == null)
+        {
+            return;
+        }
+
+        SelectComboItemByValue(_cmbAction, preset.Action);
+        SelectComboItemByCode(_cmbDeployTarget, preset.DeployTarget);
+        SelectComboItemByCode(_cmbMigrationMode, preset.MigrationMode);
+
+        _chkSkipPull.Checked = preset.SkipPull;
+        _chkSkipMigrations.Checked = preset.SkipMigrations;
+        _chkSkipBuild.Checked = preset.SkipBuild;
+        _chkSkipPublicChecks.Checked = preset.SkipPublicChecks;
+    }
+
+    private static void SelectComboItemByValue(ComboBox combo, string expectedValue)
+    {
+        for (var i = 0; i < combo.Items.Count; i++)
+        {
+            var item = combo.Items[i]?.ToString();
+            if (string.Equals(item, expectedValue, StringComparison.OrdinalIgnoreCase))
+            {
+                combo.SelectedIndex = i;
+                return;
+            }
+        }
+    }
+
+    private static void SelectComboItemByCode(ComboBox combo, string expectedCode)
+    {
+        for (var i = 0; i < combo.Items.Count; i++)
+        {
+            var item = combo.Items[i]?.ToString();
+            if (string.Equals(ParseOptionCode(item, string.Empty), expectedCode, StringComparison.OrdinalIgnoreCase))
+            {
+                combo.SelectedIndex = i;
+                return;
+            }
+        }
     }
 
     private void ShowModule(Control module)
@@ -884,11 +958,14 @@ public partial class MainShellForm : Form
     private void UpdateEnvironmentVisuals()
     {
         var profile = EnvironmentPolicy.GetProfile(_state.CurrentEnvironment);
-        _btnEnvironment.Text = $"OBJETIVO: {profile.RiskLabel}";
+        _btnEnvironment.Text = $"AMBIENTE: {profile.RiskLabel}";
 
         var color = ColorTranslator.FromHtml(profile.RiskColor);
         _btnEnvironment.ForeColor = color;
         _btnEnvironment.FlatAppearance.BorderColor = color;
+        _btnEnvironment.BackColor = Color.FromArgb(18, 18, 23);
+        _btnEnvironment.AccessibleDescription = "Abre configuración de ambiente y preset";
+        UpdateRemoteRuntimeBadgeText();
         _ = RefreshEnvironmentStatusAsync();
     }
 
@@ -914,6 +991,9 @@ public partial class MainShellForm : Form
 
             if (string.IsNullOrWhiteSpace(host))
             {
+                _remoteApiEnvironment = "N/D";
+                _remoteFrontEnvironment = "N/D";
+                UpdateRemoteRuntimeBadgeText();
                 ApplyEnvironmentStatusVisuals($"VPS: HOST SIN CONFIGURAR | {profile.RiskLabel}", Color.FromArgb(170, 170, 170));
                 return;
             }
@@ -921,14 +1001,21 @@ public partial class MainShellForm : Form
             var reachable = await HealthCheckService.IsHostReachableAsync(host, port);
             if (reachable)
             {
-                ApplyEnvironmentStatusVisuals($"VPS: EN LINEA | {profile.RiskLabel} | {DateTime.Now:HH:mm:ss}", Color.FromArgb(0, 220, 130));
+                await RefreshRemoteEnvironmentSummaryAsync(host, port);
+                ApplyEnvironmentStatusVisuals($"APP: {GetRuntimeModeLabel()} | VPS: EN LINEA | OBJETIVO: {profile.RiskLabel} | {DateTime.Now:HH:mm:ss}", Color.FromArgb(0, 220, 130));
                 return;
             }
 
-            ApplyEnvironmentStatusVisuals($"VPS: SIN CONEXION | {profile.RiskLabel} | {DateTime.Now:HH:mm:ss}", Color.FromArgb(255, 90, 90));
+            _remoteApiEnvironment = "N/D";
+            _remoteFrontEnvironment = "N/D";
+            UpdateRemoteRuntimeBadgeText();
+            ApplyEnvironmentStatusVisuals($"APP: {GetRuntimeModeLabel()} | VPS: SIN CONEXION | OBJETIVO: {profile.RiskLabel} | {DateTime.Now:HH:mm:ss}", Color.FromArgb(255, 90, 90));
         }
         catch
         {
+            _remoteApiEnvironment = "N/D";
+            _remoteFrontEnvironment = "N/D";
+            UpdateRemoteRuntimeBadgeText();
             ApplyEnvironmentStatusVisuals("VPS: ESTADO DESCONOCIDO", Color.FromArgb(255, 170, 80));
         }
         finally
@@ -941,5 +1028,175 @@ public partial class MainShellForm : Form
     {
         _lblEnvironmentRisk.Text = text;
         _lblEnvironmentRisk.ForeColor = color;
+    }
+
+    private void InitializeRemoteRuntimeBadge()
+    {
+        _lblAppTitle.Text = "> HOLOS_MIGRATOR";
+
+        _lblRemoteRuntime.BackColor = Color.FromArgb(5, 5, 5);
+        _lblRemoteRuntime.Font = new Font("Consolas", 9.5F, FontStyle.Bold);
+        _lblRemoteRuntime.Location = new Point(22, 45);
+        _lblRemoteRuntime.Name = "_lblRemoteRuntime";
+        _lblRemoteRuntime.Size = new Size(620, 26);
+        _lblRemoteRuntime.TabIndex = 99;
+        _lblRemoteRuntime.TextAlign = ContentAlignment.MiddleLeft;
+
+        if (!_panelHeader.Controls.Contains(_lblRemoteRuntime))
+        {
+            _panelHeader.Controls.Add(_lblRemoteRuntime);
+            _lblRemoteRuntime.BringToFront();
+        }
+
+        UpdateRemoteRuntimeBadgeText();
+    }
+
+    private async Task RefreshRemoteEnvironmentSummaryAsync(string host, int port)
+    {
+        var nowUtc = DateTime.UtcNow;
+        if ((nowUtc - _lastRemoteEnvironmentCheckUtc).TotalSeconds < 45
+            && !string.Equals(_remoteApiEnvironment, "N/D", StringComparison.OrdinalIgnoreCase))
+        {
+            UpdateRemoteRuntimeBadgeText();
+            return;
+        }
+
+        _lastRemoteEnvironmentCheckUtc = nowUtc;
+
+        var user = _txtServerUser.Text.Trim();
+        var keyPath = _txtSshKeyPath.Text.Trim();
+        var password = _txtSshPassword.Text.Trim();
+
+        if (string.IsNullOrWhiteSpace(user) || (string.IsNullOrWhiteSpace(keyPath) && string.IsNullOrWhiteSpace(password)))
+        {
+            _remoteApiEnvironment = "SIN SSH";
+            _remoteFrontEnvironment = "SIN SSH";
+            UpdateRemoteRuntimeBadgeText();
+            return;
+        }
+
+        var snapshot = await HealthCheckService.TryGetRemoteEnvironmentSnapshotAsync(
+            host,
+            user,
+            port,
+            string.IsNullOrWhiteSpace(keyPath) ? null : keyPath,
+            string.IsNullOrWhiteSpace(password) ? null : password,
+            9000);
+
+        if (string.IsNullOrWhiteSpace(snapshot))
+        {
+            _remoteApiEnvironment = "N/D";
+            _remoteFrontEnvironment = "N/D";
+            UpdateRemoteRuntimeBadgeText();
+            return;
+        }
+
+        _remoteApiEnvironment = ParseContainerEnvironment(snapshot, "holos-api");
+        _remoteFrontEnvironment = ParseContainerEnvironment(snapshot, "holos-front");
+        UpdateRemoteRuntimeBadgeText();
+    }
+
+    private void UpdateRemoteRuntimeBadgeText()
+    {
+        _lblRemoteRuntime.Text =
+            $"MODO LOCAL: {GetRuntimeModeLabel()} | ERP/API REMOTO: API={_remoteApiEnvironment} FRONT={_remoteFrontEnvironment}";
+        _lblRemoteRuntime.ForeColor = ResolveRemoteRuntimeColor(_remoteApiEnvironment, _remoteFrontEnvironment);
+    }
+
+    private static string ParseContainerEnvironment(string snapshot, string containerName)
+    {
+        if (string.IsNullOrWhiteSpace(snapshot))
+        {
+            return "N/D";
+        }
+
+        var marker = $"[CONTAINER:{containerName}]";
+        var markerIndex = snapshot.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (markerIndex < 0)
+        {
+            return "N/D";
+        }
+
+        var contentAfterMarker = snapshot[(markerIndex + marker.Length)..];
+        var nextContainerIndex = contentAfterMarker.IndexOf("[CONTAINER:", StringComparison.OrdinalIgnoreCase);
+        var section = nextContainerIndex >= 0 ? contentAfterMarker[..nextContainerIndex] : contentAfterMarker;
+
+        foreach (var rawLine in section.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
+        {
+            var line = rawLine.Trim();
+
+            if (line.StartsWith("ASPNETCORE_ENVIRONMENT=", StringComparison.OrdinalIgnoreCase))
+            {
+                return NormalizeEnvironmentValue(line["ASPNETCORE_ENVIRONMENT=".Length..]);
+            }
+
+            if (line.StartsWith("DOTNET_ENVIRONMENT=", StringComparison.OrdinalIgnoreCase))
+            {
+                return NormalizeEnvironmentValue(line["DOTNET_ENVIRONMENT=".Length..]);
+            }
+
+            if (line.StartsWith("NODE_ENV=", StringComparison.OrdinalIgnoreCase))
+            {
+                return NormalizeEnvironmentValue(line["NODE_ENV=".Length..]);
+            }
+        }
+
+        return "N/D";
+    }
+
+    private static string NormalizeEnvironmentValue(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "N/D";
+        }
+
+        var normalized = value.Trim();
+        if (normalized.Equals("production", StringComparison.OrdinalIgnoreCase)) return "PRODUCTION";
+        if (normalized.Equals("staging", StringComparison.OrdinalIgnoreCase)) return "STAGING";
+        if (normalized.Equals("development", StringComparison.OrdinalIgnoreCase)) return "DEVELOPMENT";
+
+        return normalized.ToUpperInvariant();
+    }
+
+    private static Color ResolveRemoteRuntimeColor(string apiEnvironment, string frontEnvironment)
+    {
+        var combined = $"{apiEnvironment}|{frontEnvironment}".ToUpperInvariant();
+
+        if (combined.Contains("SIN SSH", StringComparison.Ordinal))
+        {
+            return Color.FromArgb(255, 188, 94);
+        }
+
+        if (combined.Contains("DEVELOPMENT", StringComparison.Ordinal)
+            || combined.Contains("DEBUG", StringComparison.Ordinal)
+            || combined.Contains("DEV", StringComparison.Ordinal))
+        {
+            return Color.FromArgb(255, 129, 129);
+        }
+
+        if (combined.Contains("STAGING", StringComparison.Ordinal)
+            || combined.Contains("QA", StringComparison.Ordinal)
+            || combined.Contains("UAT", StringComparison.Ordinal))
+        {
+            return Color.FromArgb(120, 214, 255);
+        }
+
+        if (combined.Contains("PRODUCTION", StringComparison.Ordinal)
+            || combined.Contains("PROD", StringComparison.Ordinal))
+        {
+            return Color.FromArgb(255, 209, 102);
+        }
+
+        return Color.FromArgb(173, 220, 255);
+    }
+
+    private static string GetRuntimeModeLabel()
+    {
+        #if DEBUG
+        return "DEBUG";
+        #else
+        return "PRODUCCION";
+        #endif
     }
 }

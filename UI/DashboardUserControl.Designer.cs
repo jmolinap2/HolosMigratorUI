@@ -167,8 +167,8 @@ partial class DashboardUserControl
         _layoutRoot.Name = "_layoutRoot";
         _layoutRoot.Padding = new Padding(28, 20, 28, 24);
         _layoutRoot.RowCount = 5;
-        _layoutRoot.RowStyles.Add(new RowStyle(SizeType.Absolute, 88F));
-        _layoutRoot.RowStyles.Add(new RowStyle(SizeType.Absolute, 90F));
+        _layoutRoot.RowStyles.Add(new RowStyle(SizeType.Absolute, 110F));
+        _layoutRoot.RowStyles.Add(new RowStyle(SizeType.Absolute, 110F));
         _layoutRoot.RowStyles.Add(new RowStyle(SizeType.Absolute, 124F));
         _layoutRoot.RowStyles.Add(new RowStyle(SizeType.Absolute, 124F));
         _layoutRoot.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
@@ -206,8 +206,8 @@ partial class DashboardUserControl
         // _lblTitleHeader
         // 
         _lblTitleHeader.Dock = DockStyle.Top;
-        _lblTitleHeader.Font = new Font("Segoe UI Semibold", 17F, FontStyle.Bold);
-        _lblTitleHeader.ForeColor = Color.FromArgb(244, 248, 252);
+        _lblTitleHeader.Font = new Font("Segoe UI Semibold", 18F, FontStyle.Bold);
+        _lblTitleHeader.ForeColor = Color.White;
         _lblTitleHeader.Location = new Point(0, 34);
         _lblTitleHeader.Name = "_lblTitleHeader";
         _lblTitleHeader.Size = new Size(1270, 42);
@@ -218,8 +218,8 @@ partial class DashboardUserControl
         // 
         _lblSubtitleHeader.AutoEllipsis = true;
         _lblSubtitleHeader.Dock = DockStyle.Top;
-        _lblSubtitleHeader.Font = new Font("Segoe UI", 10F);
-        _lblSubtitleHeader.ForeColor = Color.FromArgb(186, 203, 222);
+        _lblSubtitleHeader.Font = new Font("Segoe UI", 11F, FontStyle.Regular);
+        _lblSubtitleHeader.ForeColor = Color.FromArgb(222, 229, 240);
         _lblSubtitleHeader.Location = new Point(0, 8);
         _lblSubtitleHeader.Name = "_lblSubtitleHeader";
         _lblSubtitleHeader.Size = new Size(1270, 26);
@@ -252,7 +252,7 @@ partial class DashboardUserControl
         _panelOverall.Location = new Point(22, 104);
         _panelOverall.Margin = new Padding(0);
         _panelOverall.Name = "_panelOverall";
-        _panelOverall.Padding = new Padding(16, 10, 16, 8);
+        _panelOverall.Padding = new Padding(16, 12, 16, 10);
         _panelOverall.Size = new Size(1456, 90);
         _panelOverall.TabIndex = 1;
         // 
@@ -260,19 +260,19 @@ partial class DashboardUserControl
         // 
         _lblStateSource.AutoEllipsis = true;
         _lblStateSource.Dock = DockStyle.Top;
-        _lblStateSource.Font = new Font("Segoe UI", 9.5F);
-        _lblStateSource.ForeColor = Color.FromArgb(151, 169, 191);
+        _lblStateSource.Font = new Font("Segoe UI", 10F);
+        _lblStateSource.ForeColor = Color.FromArgb(205, 219, 237);
         _lblStateSource.Location = new Point(16, 68);
         _lblStateSource.Name = "_lblStateSource";
-        _lblStateSource.Size = new Size(1424, 22);
+        _lblStateSource.Size = new Size(1424, 44);
         _lblStateSource.TabIndex = 2;
         _lblStateSource.Text = "Fuente: --";
         // 
         // _lblLastChecked
         // 
         _lblLastChecked.Dock = DockStyle.Top;
-        _lblLastChecked.Font = new Font("Segoe UI", 10.5F);
-        _lblLastChecked.ForeColor = Color.FromArgb(187, 205, 226);
+        _lblLastChecked.Font = new Font("Segoe UI Semibold", 11F, FontStyle.Bold);
+        _lblLastChecked.ForeColor = Color.FromArgb(224, 235, 248);
         _lblLastChecked.Location = new Point(16, 44);
         _lblLastChecked.Name = "_lblLastChecked";
         _lblLastChecked.Size = new Size(1424, 24);

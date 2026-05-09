@@ -165,10 +165,61 @@ public static class HealthCheckService
         var uptimeLine = lines.LastOrDefault(l => l.StartsWith("up ", StringComparison.OrdinalIgnoreCase));
         if (!string.IsNullOrWhiteSpace(uptimeLine))
         {
-            metrics["uptime"] = uptimeLine[3..].Trim();
+            metrics["uptime"] = CompactUptime(uptimeLine[3..].Trim());
         }
 
         return metrics;
+    }
+
+    public static Task<string?> TryGetRemoteEnvironmentSnapshotAsync(
+        string host,
+        string user,
+        int port,
+        string? keyPath,
+        string? password = null,
+        int timeoutMs = 12000)
+    {
+        const string remoteCommand =
+            "bash -lc \"LC_ALL=C; " +
+            "echo '[HOST]'; " +
+            "printenv | egrep '^(ASPNETCORE_ENVIRONMENT|DOTNET_ENVIRONMENT|NODE_ENV|HOLOS_|TZ|SQL|ConnectionStrings__)=' | sort || true; " +
+            "for c in holos-api holos-front holos-sql; do " +
+            "if docker ps -a --format '{{.Names}}' | grep -qx $c; then " +
+            "echo; echo \"[CONTAINER:$c]\"; " +
+            "docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' $c " +
+            "| egrep '^(ASPNETCORE_ENVIRONMENT|DOTNET_ENVIRONMENT|NODE_ENV|HOLOS_|TZ|SQL|ConnectionStrings__)=' | sort || true; " +
+            "fi; done\"";
+
+        return TryRunSshCommandAsync(host, user, port, keyPath, password, remoteCommand, timeoutMs);
+    }
+
+    public static Task<string?> TryGetRemoteLogAsync(
+        string host,
+        string user,
+        int port,
+        string? keyPath,
+        string? password,
+        string logSource,
+        int tailLines = 300,
+        int timeoutMs = 12000)
+    {
+        var safeTail = Math.Clamp(tailLines, 50, 5000);
+
+        var remoteCommand = logSource switch
+        {
+            "host-syslog" => $"bash -lc \"tail -n {safeTail} /var/log/syslog 2>/dev/null || journalctl -n {safeTail} --no-pager\"",
+            "host-auth" => $"bash -lc \"tail -n {safeTail} /var/log/auth.log 2>/dev/null || journalctl -u ssh -n {safeTail} --no-pager\"",
+            "migrator" => $"bash -lc \"tail -n {safeTail} /root/OmniSuite/migrator_logs.txt 2>/dev/null || echo '__LOG_NOT_FOUND__ /root/OmniSuite/migrator_logs.txt'\"",
+            "holos-api" or "holos-front" or "holos-sql" => $"docker logs --tail {safeTail} {logSource} 2>&1",
+            _ => null
+        };
+
+        if (remoteCommand == null)
+        {
+            return Task.FromResult<string?>(null);
+        }
+
+        return TryRunSshCommandAsync(host, user, port, keyPath, password, remoteCommand, timeoutMs);
     }
 
     private static Task<string?> TryRunSshCommandAsync(
@@ -236,5 +287,36 @@ public static class HealthCheckService
                 return null;
             }
         });
+    }
+
+    // Convierte "2 weeks, 2 days, 1 hour, 10 minutes" → "2w 2d 1h 10m"
+    private static string CompactUptime(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return raw;
+
+        var map = new (string[] keys, string suffix)[]
+        {
+            (["weeks", "week"],   "w"),
+            (["days",  "day"],    "d"),
+            (["hours", "hour"],   "h"),
+            (["minutes","minute"],"m"),
+        };
+
+        var parts = new List<string>();
+        foreach (var (keys, suffix) in map)
+        {
+            foreach (var key in keys)
+            {
+                var idx = raw.IndexOf(key, StringComparison.OrdinalIgnoreCase);
+                if (idx <= 0) continue;
+                var numStart = idx - 1;
+                while (numStart > 0 && char.IsDigit(raw[numStart - 1])) numStart--;
+                if (int.TryParse(raw[numStart..idx].Trim(), out int n))
+                    parts.Add($"{n}{suffix}");
+                break;
+            }
+        }
+
+        return parts.Count > 0 ? string.Join(" ", parts) : raw;
     }
 }

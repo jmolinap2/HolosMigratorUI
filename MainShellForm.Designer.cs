@@ -983,7 +983,7 @@ partial class MainShellForm
         _btnRun.FlatStyle = FlatStyle.Flat;
         _btnRun.Font = new Font("Consolas", 10F, FontStyle.Bold);
         _btnRun.ForeColor = Color.FromArgb(0, 255, 65);
-        _btnRun.Location = new Point(815, 24);
+        _btnRun.Location = new Point(850, 24);
         _btnRun.Margin = new Padding(0, 10, 6, 10);
         _btnRun.Name = "_btnRun";
         _btnRun.Size = new Size(140, 44);
@@ -1018,9 +1018,9 @@ partial class MainShellForm
         _btnEnvironment.Location = new Point(190, 24);
         _btnEnvironment.Margin = new Padding(0, 10, 10, 10);
         _btnEnvironment.Name = "_btnEnvironment";
-        _btnEnvironment.Size = new Size(180, 44);
+        _btnEnvironment.Size = new Size(240, 44);
         _btnEnvironment.TabIndex = 5;
-        _btnEnvironment.Text = "OBJETIVO: STAGING";
+        _btnEnvironment.Text = "AMBIENTE: STAGING";
         _btnEnvironment.UseVisualStyleBackColor = false;
         // 
         // _btnControlCenter
@@ -1031,12 +1031,12 @@ partial class MainShellForm
         _btnControlCenter.FlatStyle = FlatStyle.Flat;
         _btnControlCenter.Font = new Font("Consolas", 10F, FontStyle.Bold);
         _btnControlCenter.ForeColor = Color.FromArgb(0, 255, 255);
-        _btnControlCenter.Location = new Point(380, 24);
+        _btnControlCenter.Location = new Point(390, 24);
         _btnControlCenter.Margin = new Padding(0, 10, 10, 10);
         _btnControlCenter.Name = "_btnControlCenter";
-        _btnControlCenter.Size = new Size(145, 44);
+        _btnControlCenter.Size = new Size(160, 44);
         _btnControlCenter.TabIndex = 6;
-        _btnControlCenter.Text = "CONTROL";
+        _btnControlCenter.Text = "OPERACIONES";
         _btnControlCenter.UseVisualStyleBackColor = false;
         // 
         // _btnOpenScripts
@@ -1047,7 +1047,7 @@ partial class MainShellForm
         _btnOpenScripts.FlatStyle = FlatStyle.Flat;
         _btnOpenScripts.Font = new Font("Consolas", 10F, FontStyle.Bold);
         _btnOpenScripts.ForeColor = Color.FromArgb(0, 255, 255);
-        _btnOpenScripts.Location = new Point(665, 24);
+        _btnOpenScripts.Location = new Point(700, 24);
         _btnOpenScripts.Margin = new Padding(0, 10, 10, 10);
         _btnOpenScripts.Name = "_btnOpenScripts";
         _btnOpenScripts.Size = new Size(140, 44);
@@ -1063,24 +1063,24 @@ partial class MainShellForm
         _btnOpenLog.FlatStyle = FlatStyle.Flat;
         _btnOpenLog.Font = new Font("Consolas", 10F, FontStyle.Bold);
         _btnOpenLog.ForeColor = Color.FromArgb(100, 220, 255);
-        _btnOpenLog.Location = new Point(535, 24);
+        _btnOpenLog.Location = new Point(560, 24);
         _btnOpenLog.Margin = new Padding(0, 10, 10, 10);
         _btnOpenLog.Name = "_btnOpenLog";
-        _btnOpenLog.Size = new Size(120, 44);
+        _btnOpenLog.Size = new Size(130, 44);
         _btnOpenLog.TabIndex = 3;
-        _btnOpenLog.Text = "LOG";
+        _btnOpenLog.Text = "LOG LOCAL";
         _btnOpenLog.UseVisualStyleBackColor = false;
         // 
         // _btnStop
         // 
         _btnStop.BackColor = Color.FromArgb(60, 10, 10);
         _btnStop.Cursor = Cursors.Hand;
-        _btnStop.Enabled = false;
+        _btnStop.Enabled = true;
         _btnStop.FlatAppearance.BorderColor = Color.FromArgb(255, 60, 60);
         _btnStop.FlatStyle = FlatStyle.Flat;
         _btnStop.Font = new Font("Consolas", 10F, FontStyle.Bold);
-        _btnStop.ForeColor = Color.FromArgb(255, 120, 120);
-        _btnStop.Location = new Point(961, 24);
+        _btnStop.ForeColor = Color.FromArgb(255, 220, 220);
+        _btnStop.Location = new Point(996, 24);
         _btnStop.Margin = new Padding(0, 10, 6, 10);
         _btnStop.Name = "_btnStop";
         _btnStop.Size = new Size(140, 44);
@@ -1122,10 +1122,10 @@ partial class MainShellForm
         _flpHeaderActions.Controls.Add(_btnRun);
         _flpHeaderActions.Controls.Add(_btnStop);
         _flpHeaderActions.Dock = DockStyle.Right;
-        _flpHeaderActions.Location = new Point(710, 0);
+        _flpHeaderActions.Location = new Point(660, 0);
         _flpHeaderActions.Name = "_flpHeaderActions";
         _flpHeaderActions.Padding = new Padding(0, 14, 12, 14);
-        _flpHeaderActions.Size = new Size(1119, 74);
+        _flpHeaderActions.Size = new Size(1169, 74);
         _flpHeaderActions.TabIndex = 2;
         _flpHeaderActions.WrapContents = false;
         // 
@@ -1137,11 +1137,11 @@ partial class MainShellForm
         _lblAppTitle.ForeColor = Color.FromArgb(0, 255, 65);
         _lblAppTitle.Location = new Point(0, 0);
         _lblAppTitle.Name = "_lblAppTitle";
-        _lblAppTitle.Padding = new Padding(20, 0, 0, 0);
+        _lblAppTitle.Padding = new Padding(20, 15, 0, 0);
         _lblAppTitle.Size = new Size(340, 74);
         _lblAppTitle.TabIndex = 0;
         _lblAppTitle.Text = "> HOLOS_MIGRATOR";
-        _lblAppTitle.TextAlign = ContentAlignment.MiddleLeft;
+        _lblAppTitle.TextAlign = ContentAlignment.TopLeft;
         // 
         // MainShellForm
         // 
