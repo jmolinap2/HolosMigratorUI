@@ -836,7 +836,8 @@ public partial class MainShellForm : Form
                 () => (int)_numSshPort.Value,
                 () => _txtServerUser.Text.Trim(),
                 () => GetEffectiveSshAuthMode(),
-                () => _txtSshKeyPath.Text.Trim());
+                () => _txtSshKeyPath.Text.Trim(),
+                () => _txtSshPassword.Text.Trim());
             ShowModule(dash);
             _ = dash.RefreshDashboardAsync();
         };

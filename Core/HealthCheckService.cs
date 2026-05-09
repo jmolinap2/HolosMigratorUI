@@ -1,6 +1,6 @@
 using System.Net.Sockets;
-using System.Diagnostics;
 using System.Globalization;
+using Renci.SshNet;
 
 namespace HolosMigratorUI.Core;
 
@@ -31,6 +31,7 @@ public static class HealthCheckService
         string user,
         int port,
         string? keyPath,
+        string? password = null,
         int timeoutMs = 7000)
     {
         var output = await TryRunSshCommandAsync(
@@ -38,6 +39,7 @@ public static class HealthCheckService
             user,
             port,
             keyPath,
+            password,
             "docker ps --format '{{.Names}}|{{.Status}}'",
             timeoutMs);
 
@@ -82,6 +84,7 @@ public static class HealthCheckService
         string user,
         int port,
         string? keyPath,
+        string? password = null,
         int timeoutMs = 9000)
     {
         var output = await TryRunSshCommandAsync(
@@ -89,6 +92,7 @@ public static class HealthCheckService
             user,
             port,
             keyPath,
+            password,
             "bash -lc \"LC_ALL=C; cat /proc/loadavg; nproc; free -m; df -h /; uptime -p 2>/dev/null || uptime\"",
             timeoutMs);
 
@@ -167,82 +171,70 @@ public static class HealthCheckService
         return metrics;
     }
 
-    private static async Task<string?> TryRunSshCommandAsync(
+    private static Task<string?> TryRunSshCommandAsync(
         string host,
         string user,
         int port,
         string? keyPath,
+        string? password,
         string remoteCommand,
         int timeoutMs)
     {
         if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(user))
         {
-            return null;
+            return Task.FromResult<string?>(null);
         }
 
-        using var process = new Process
-        {
-            StartInfo = new ProcessStartInfo("ssh")
-            {
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            }
-        };
+        AuthenticationMethod? keyAuth = null;
+        AuthenticationMethod? passAuth = null;
 
-        process.StartInfo.ArgumentList.Add("-o");
-        process.StartInfo.ArgumentList.Add("BatchMode=yes");
-        process.StartInfo.ArgumentList.Add("-o");
-        process.StartInfo.ArgumentList.Add("StrictHostKeyChecking=accept-new");
-        process.StartInfo.ArgumentList.Add("-o");
-        process.StartInfo.ArgumentList.Add($"ConnectTimeout={Math.Max(3, timeoutMs / 1000)}");
-        process.StartInfo.ArgumentList.Add("-p");
-        process.StartInfo.ArgumentList.Add(port.ToString());
-
-        if (!string.IsNullOrWhiteSpace(keyPath))
-        {
-            process.StartInfo.ArgumentList.Add("-i");
-            process.StartInfo.ArgumentList.Add(keyPath);
-        }
-
-        process.StartInfo.ArgumentList.Add($"{user}@{host}");
-        process.StartInfo.ArgumentList.Add(remoteCommand);
-
-        try
-        {
-            process.Start();
-        }
-        catch
-        {
-            return null;
-        }
-
-        var outputTask = process.StandardOutput.ReadToEndAsync();
-        var errorTask = process.StandardError.ReadToEndAsync();
-        var waitTask = process.WaitForExitAsync();
-
-        var completed = await Task.WhenAny(waitTask, Task.Delay(timeoutMs));
-        if (completed != waitTask)
+        if (!string.IsNullOrWhiteSpace(keyPath) && File.Exists(keyPath))
         {
             try
             {
-                if (!process.HasExited)
-                {
-                    process.Kill(true);
-                }
+                keyAuth = new PrivateKeyAuthenticationMethod(user, new PrivateKeyFile(keyPath));
             }
             catch
             {
-                // Ignorar fallos al intentar detener el proceso.
+                keyAuth = null;
             }
-
-            return null;
         }
 
-        var output = await outputTask;
-        _ = await errorTask;
+        if (!string.IsNullOrWhiteSpace(password))
+        {
+            passAuth = new PasswordAuthenticationMethod(user, password);
+        }
 
-        return process.ExitCode == 0 ? output : null;
+        var methods = new List<AuthenticationMethod>();
+        if (keyAuth != null) methods.Add(keyAuth);
+        if (passAuth != null) methods.Add(passAuth);
+
+        if (methods.Count == 0)
+        {
+            return Task.FromResult<string?>(null);
+        }
+
+        var connectionInfo = new ConnectionInfo(host, port, user, [.. methods])
+        {
+            Timeout = TimeSpan.FromMilliseconds(timeoutMs)
+        };
+
+        return Task.Run(() =>
+        {
+            try
+            {
+                using var client = new SshClient(connectionInfo);
+                client.Connect();
+                using var cmd = client.CreateCommand(remoteCommand);
+                cmd.CommandTimeout = TimeSpan.FromMilliseconds(timeoutMs);
+                var result = cmd.Execute();
+                client.Disconnect();
+                return cmd.ExitStatus == 0 ? result : null;
+            }
+            catch
+            {
+                return null;
+            }
+        });
     }
 }
