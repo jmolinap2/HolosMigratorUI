@@ -834,6 +834,19 @@ public partial class MainShellForm : Form
         btnSettings.Click += (_, _) => ShowSettingsModule();
         _pnlSidebar.Controls.Add(btnSettings);
 
+        var btnStorage = UIHelper.CrearBotonMenu("Storage");
+        btnStorage.Click += (_, _) =>
+        {
+            var storage = new StorageUserControl(
+                () => _txtServerHost.Text.Trim(),
+                () => (int)_numSshPort.Value,
+                () => _txtServerUser.Text.Trim(),
+                () => _txtSshKeyPath.Text.Trim(),
+                () => _txtSshPassword.Text.Trim());
+            ShowModule(storage);
+        };
+        _pnlSidebar.Controls.Add(btnStorage);
+
         var btnAlerts = UIHelper.CrearBotonMenu("Alerts");
         btnAlerts.Click += (_, _) =>
         {

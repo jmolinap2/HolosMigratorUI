@@ -195,6 +195,33 @@ public static class HealthCheckService
         return TryRunSshCommandAsync(host, user, port, keyPath, password, remoteCommand, timeoutMs);
     }
 
+    public static Task<string?> TryGetRemoteStorageInfoAsync(
+        string host, string user, int port, string? keyPath, string? password = null, int timeoutMs = 14000)
+    {
+        const string cmd =
+            "bash -lc \"LC_ALL=C; " +
+            "echo '[DISK]'; df -h / 2>/dev/null; " +
+            "echo '[DOCKER]'; docker system df 2>/dev/null; " +
+            "echo '[DOCKER_IMAGES]'; docker images --format '{{.Repository}}:{{.Tag}}\\t{{.Size}}\\t{{.ID}}' 2>/dev/null; " +
+            "echo '[TOP_DIRS]'; du -xh / --max-depth=2 2>/dev/null | sort -h | tail -n 20\"";
+
+        return TryRunSshCommandAsync(host, user, port, keyPath, password, cmd, timeoutMs);
+    }
+
+    public static Task<string?> TryRunDockerPruneAsync(
+        string host, string user, int port, string? keyPath, string? password = null, string target = "builder", int timeoutMs = 60000)
+    {
+        var cmd = target switch
+        {
+            "builder" => "bash -lc \"docker builder prune -af 2>&1 | tail -5\"",
+            "images"  => "bash -lc \"docker image prune -af 2>&1 | tail -5\"",
+            "system"  => "bash -lc \"docker system prune -af --volumes 2>&1 | tail -5\"",
+            _         => "echo 'target desconocido'"
+        };
+
+        return TryRunSshCommandAsync(host, user, port, keyPath, password, cmd, timeoutMs);
+    }
+
     public static Task<string?> TryGetRemoteLogAsync(
         string host,
         string user,

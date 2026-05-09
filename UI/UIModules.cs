@@ -570,3 +570,4 @@ public class AlertsUserControl : UserControl
         return card;
     }
 }
+
