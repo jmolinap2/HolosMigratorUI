@@ -30,6 +30,7 @@ public partial class MainShellForm : Form
             return;
         }
 
+        SetDefaultComboSelections();
         InitializeUIModules();
         BindEvents();
         LoadSettings();
@@ -50,6 +51,16 @@ public partial class MainShellForm : Form
     {
         return System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime
             || string.Equals(Process.GetCurrentProcess().ProcessName, "devenv", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void SetDefaultComboSelections()
+    {
+        _cmbAction.SelectedIndex = 0;
+        // Key en vez de Auto: Auto prioriza password en silencio si hay una guardada,
+        // y la llave SSH es el metodo probado como confiable para este VPS.
+        _cmbSshAuth.SelectedIndex = 1;
+        _cmbDeployTarget.SelectedIndex = 0;
+        _cmbMigrationMode.SelectedIndex = 0;
     }
 
     private void LoadEnvVariables()
@@ -250,6 +261,7 @@ public partial class MainShellForm : Form
         var keyPath = _txtSshKeyPath.Text.Trim();
         if (!string.IsNullOrWhiteSpace(keyPath))
         {
+            EnsureKeyFilePermissions(keyPath);
             args.Add("-SshKeyPath");
             args.Add(keyPath);
         }
@@ -298,6 +310,43 @@ public partial class MainShellForm : Form
         }
 
         return args;
+    }
+
+    private void EnsureKeyFilePermissions(string keyPath)
+    {
+        if (!File.Exists(keyPath))
+        {
+            return;
+        }
+
+        try
+        {
+            RunIcacls(keyPath, "/inheritance:r");
+            RunIcacls(keyPath, $"/grant:r {Environment.UserName}:R");
+            AppendLog("🔒 Permisos de la llave SSH verificados/ajustados (solo tu usuario puede leerla).");
+        }
+        catch (Exception ex)
+        {
+            AppendLog($"⚠ No se pudieron ajustar los permisos de la llave SSH: {ex.Message}. " +
+                      "Si SSH la rechaza por 'bad permissions', ajústalos a mano con icacls.");
+        }
+    }
+
+    private static void RunIcacls(string path, string arguments)
+    {
+        using var process = Process.Start(new ProcessStartInfo("icacls", $"\"{path}\" {arguments}")
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        }) ?? throw new InvalidOperationException("No se pudo iniciar icacls.");
+
+        process.WaitForExit(5000);
+        if (process.ExitCode != 0)
+        {
+            throw new InvalidOperationException($"icacls {arguments} salió con código {process.ExitCode}.");
+        }
     }
 
     private void ValidateInputs()
@@ -895,7 +944,8 @@ public partial class MainShellForm : Form
             () => (int)_numSshPort.Value,
             () => _txtServerUser.Text.Trim(),
             () => _txtSshKeyPath.Text.Trim(),
-            () => _txtSshPassword.Text.Trim());
+            () => _txtSshPassword.Text.Trim(),
+            () => _txtRemoteRepoPath.Text.Trim());
 
         ShowModule(settings);
     }

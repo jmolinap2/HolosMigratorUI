@@ -37,6 +37,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        SetDefaultComboSelections();
 
         _serviceLabels = new()
         {
@@ -346,6 +347,7 @@ public partial class MainWindow : Window
 
         if (!string.IsNullOrWhiteSpace(SshKeyPathText.Text))
         {
+            EnsureKeyFilePermissions(SshKeyPathText.Text.Trim());
             args.Add("-SshKeyPath");
             args.Add(SshKeyPathText.Text.Trim());
         }
@@ -391,6 +393,53 @@ public partial class MainWindow : Window
         }
 
         return args;
+    }
+
+    private void SetDefaultComboSelections()
+    {
+        ActionCombo.SelectedIndex = 0;
+        // Key en vez de Auto: Auto prioriza password en silencio si hay una guardada,
+        // y la llave SSH es el metodo probado como confiable para este VPS.
+        SshAuthCombo.SelectedIndex = 1;
+        DeployTargetCombo.SelectedIndex = 0;
+        MigrationModeCombo.SelectedIndex = 0;
+    }
+
+    private void EnsureKeyFilePermissions(string keyPath)
+    {
+        if (!File.Exists(keyPath))
+        {
+            return;
+        }
+
+        try
+        {
+            RunIcacls(keyPath, "/inheritance:r");
+            RunIcacls(keyPath, $"/grant:r {Environment.UserName}:R");
+            AppendLog("🔒 Permisos de la llave SSH verificados/ajustados (solo tu usuario puede leerla).");
+        }
+        catch (Exception ex)
+        {
+            AppendLog($"⚠ No se pudieron ajustar los permisos de la llave SSH: {ex.Message}. " +
+                      "Si SSH la rechaza por 'bad permissions', ajústalos a mano con icacls.");
+        }
+    }
+
+    private static void RunIcacls(string path, string arguments)
+    {
+        using var process = Process.Start(new ProcessStartInfo("icacls", $"\"{path}\" {arguments}")
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        }) ?? throw new InvalidOperationException("No se pudo iniciar icacls.");
+
+        process.WaitForExit(5000);
+        if (process.ExitCode != 0)
+        {
+            throw new InvalidOperationException($"icacls {arguments} salió con código {process.ExitCode}.");
+        }
     }
 
     private void ValidateInputs()

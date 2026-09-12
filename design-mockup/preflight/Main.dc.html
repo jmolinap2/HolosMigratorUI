@@ -1,0 +1,230 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    a { color: #4dff8f; text-decoration: none; }
+    a:hover { color: #8dffb8; }
+
+    .mono { font-family: 'Share Tech Mono', 'Consolas', 'Courier New', monospace; }
+
+    .app-shell {
+      width: 1280px;
+      height: 900px;
+      background: #060a06;
+      color: #33e07a;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .topbar {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 28px;
+      border-bottom: 1px solid #163d24;
+    }
+    .brand { display: flex; align-items: baseline; gap: 8px; font-size: 19px; letter-spacing: 1px; color: #4dff8f; }
+    .brand .chevron { color: #1f7a45; }
+    .nav-buttons { display: flex; gap: 10px; }
+    .nav-btn {
+      font-family: inherit; font-size: 12px; letter-spacing: 0.5px;
+      padding: 9px 16px; background: transparent; border: 1px solid #1f7a45; color: #33e07a;
+    }
+    .nav-btn.accent { border-color: #2fb8ff; color: #2fb8ff; }
+    .nav-btn.run { background: #22ff66; border-color: #22ff66; color: #04140a; font-weight: 700; }
+    .nav-btn.stop { background: #ff3b3b; border-color: #ff3b3b; color: #1a0303; font-weight: 700; }
+
+    .body-row { flex: 1 1 auto; display: flex; min-height: 0; }
+    .sidebar {
+      flex: 0 0 210px; border-right: 1px solid #163d24; padding: 22px 0;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .side-item { padding: 11px 26px; font-size: 13px; letter-spacing: 0.5px; color: #2a8a52; border-left: 3px solid transparent; }
+    .side-item.active { color: #daffe9; background: #0d2416; border-left: 3px solid #22ff66; }
+
+    .content { flex: 1 1 auto; padding: 26px 32px; display: flex; flex-direction: column; min-height: 0; gap: 18px; }
+
+    .groups-row { display: flex; gap: 18px; flex: 0 0 auto; }
+    fieldset.group { flex: 1 1 0; border: 1px solid #1f7a45; padding: 16px 18px 18px; margin: 0; }
+    fieldset.group legend { padding: 0 8px; font-size: 11px; letter-spacing: 0.5px; color: #7be8a4; }
+    .mini-row { display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; color: #a8f0c2; }
+    .mini-row span:last-child { color: #d9ffe6; }
+
+    .log-panel {
+      flex: 1 1 auto;
+      border: 1px solid #1f7a45;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .log-title {
+      padding: 10px 16px;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      color: #7be8a4;
+      border-bottom: 1px solid #163d24;
+      display: flex;
+      justify-content: space-between;
+    }
+    .log-title .env-tag { color: #f5a623; }
+    .log-body { flex: 1 1 auto; overflow-y: auto; padding: 14px 18px; font-size: 12.5px; line-height: 1.65; }
+
+    .preflight-box {
+      border: 1px solid #2a8a52;
+      background: #0a140c;
+      padding: 14px 16px 16px;
+      margin-bottom: 14px;
+    }
+    .preflight-title {
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      color: #dafff0;
+      margin-bottom: 10px;
+    }
+    .check-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+    .check-icon { flex: 0 0 auto; width: 15px; height: 15px; }
+    .check-text { color: #b8ffe0; }
+    .check-row.fail .check-text { color: #ffb3b3; }
+    .check-row.warn .check-text { color: #ffd48a; }
+    .check-detail { color: #4f9c6c; font-size: 11.5px; margin-left: 25px; }
+    .check-row.fail ~ .check-detail.fail-detail { color: #ff8f8f; }
+
+    .stop-banner {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: #1a0d0d;
+      border-left: 3px solid #ff5555;
+      color: #ffb3b3;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .stop-actions { display: flex; gap: 8px; flex: 0 0 auto; }
+    .mini-btn {
+      font-family: inherit; font-size: 11px; padding: 7px 12px; background: transparent;
+      border: 1px solid #ff5555; color: #ffb3b3; white-space: nowrap;
+    }
+    .mini-btn.primary { background: #ff5555; color: #1a0303; border-color: #ff5555; font-weight: 700; }
+
+    .plain-line { color: #2a8a52; }
+
+    svg.icon-ok { stroke: #22ff66; }
+    svg.icon-fail { stroke: #ff5555; }
+    svg.icon-warn { stroke: #f5a623; }
+  </style>
+</helmet>
+
+<div class="app-shell mono">
+
+  <div class="topbar">
+    <div class="brand"><span class="chevron">&gt;</span>HOLOS_MIGRATOR</div>
+    <div class="nav-buttons">
+      <button class="nav-btn accent">[ SYS.ADVANCED ]</button>
+      <button class="nav-btn accent">OPERACIONES</button>
+      <button class="nav-btn accent">LOG LOCAL</button>
+      <button class="nav-btn">SCRIPTS</button>
+      <button class="nav-btn run">EJECUTAR</button>
+      <button class="nav-btn stop">DETENER</button>
+    </div>
+  </div>
+
+  <div class="body-row">
+    <div class="sidebar">
+      <div class="side-item">Dashboard</div>
+      <div class="side-item">Log Center</div>
+      <div class="side-item">Alerts</div>
+      <div class="side-item">Storage</div>
+      <div class="side-item">Settings</div>
+      <div class="side-item active">Operations</div>
+    </div>
+
+    <div class="content">
+
+      <div class="groups-row">
+        <fieldset class="group">
+          <legend>GENERAL</legend>
+          <div class="mini-row"><span>Acción</span><span>Deploy completo</span></div>
+          <div class="mini-row"><span>Repo local</span><span>C:\Repos\HolosCoreOps</span></div>
+        </fieldset>
+        <fieldset class="group">
+          <legend>SSH</legend>
+          <div class="mini-row"><span>Servidor</span><span>187.7.24.119</span></div>
+          <div class="mini-row"><span>Modo SSH</span><span>Key</span></div>
+        </fieldset>
+        <fieldset class="group">
+          <legend>OPCIONES DE DESPLIEGUE Y MIGRACIÓN</legend>
+          <div class="mini-row"><span>Objetivo</span><span>Both - Front + API</span></div>
+          <div class="mini-row"><span>Migración</span><span>B - Host + todos</span></div>
+        </fieldset>
+      </div>
+
+      <div class="log-panel">
+        <div class="log-title">
+          <span>Salida en tiempo real</span>
+          <span class="env-tag">APP: PRODUCCIÓN | VPS: EN</span>
+        </div>
+        <div class="log-body">
+
+          <div class="preflight-box">
+            <div class="preflight-title">VERIFICACIÓN PRE-VUELO — antes de tocar el servidor</div>
+
+            <div class="check-row">
+              <svg class="icon-ok check-icon" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span class="check-text">Conexión SSH (root@187.7.24.119, modo Key)</span>
+            </div>
+
+            <div class="check-row">
+              <svg class="icon-ok check-icon" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span class="check-text">git, docker y docker compose instalados en el VPS</span>
+            </div>
+
+            <div class="check-row">
+              <svg class="icon-ok check-icon" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span class="check-text">Rama "develop" existe en /root/OmniSuite</span>
+            </div>
+
+            <div class="check-row">
+              <svg class="icon-ok check-icon" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span class="check-text">docker-compose.postgresql.production.yml existe en el repo remoto</span>
+            </div>
+
+            <div class="check-row fail">
+              <svg class="icon-fail check-icon" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              <span class="check-text">/root/OmniSuite/.env no existe todavía</span>
+            </div>
+            <div class="check-detail fail-detail">Faltan POSTGRES_DB, POSTGRES_PASSWORD, JWT_SECURITY_KEY — configúralos en Settings.</div>
+
+            <div class="stop-banner">
+              <span>⛔ El deploy real no se inició — corrige lo anterior primero.</span>
+              <div class="stop-actions">
+                <button class="mini-btn">Ir a Settings</button>
+                <button class="mini-btn primary">Ejecutar de todas formas</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="plain-line">[12:54:09] Listo para reintentar cuando corrijas el .env remoto.</div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

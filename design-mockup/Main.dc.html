@@ -1,0 +1,351 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    a { color: #4dff8f; text-decoration: none; }
+    a:hover { color: #8dffb8; }
+
+    .mono {
+      font-family: 'Share Tech Mono', 'Consolas', 'Courier New', monospace;
+    }
+
+    .app-shell {
+      width: 1280px;
+      height: 860px;
+      background: #060a06;
+      color: #33e07a;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ---- top bar ---- */
+    .topbar {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 28px;
+      border-bottom: 1px solid #163d24;
+    }
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      font-size: 19px;
+      letter-spacing: 1px;
+      color: #4dff8f;
+    }
+    .brand .chevron { color: #1f7a45; }
+    .nav-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    .nav-btn {
+      font-family: inherit;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      padding: 9px 16px;
+      background: transparent;
+      border: 1px solid #1f7a45;
+      color: #33e07a;
+    }
+    .nav-btn.accent { border-color: #2fb8ff; color: #2fb8ff; }
+    .nav-btn.run { background: #22ff66; border-color: #22ff66; color: #04140a; font-weight: 700; }
+    .nav-btn.stop { background: #ff3b3b; border-color: #ff3b3b; color: #1a0303; font-weight: 700; }
+
+    /* ---- body: sidebar + content ---- */
+    .body-row {
+      flex: 1 1 auto;
+      display: flex;
+      min-height: 0;
+    }
+    .sidebar {
+      flex: 0 0 210px;
+      border-right: 1px solid #163d24;
+      padding: 22px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .side-item {
+      padding: 11px 26px;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      color: #2a8a52;
+      border-left: 3px solid transparent;
+    }
+    .side-item.active {
+      color: #daffe9;
+      background: #0d2416;
+      border-left: 3px solid #22ff66;
+    }
+
+    .content {
+      flex: 1 1 auto;
+      padding: 30px 40px;
+      overflow-y: auto;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 22px;
+      max-width: 760px;
+    }
+    .page-title {
+      font-size: 17px;
+      letter-spacing: 0.5px;
+      color: #dafff0;
+    }
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #f5a623;
+    }
+
+    fieldset.group {
+      max-width: 760px;
+      border: 1px solid #1f7a45;
+      padding: 20px 22px 22px;
+      margin: 0 0 22px 0;
+    }
+    fieldset.group legend {
+      padding: 0 8px;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      color: #7be8a4;
+    }
+
+    .field-col {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .field-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .field-label {
+      flex: 0 0 190px;
+      font-size: 12px;
+      color: #5fbf87;
+      letter-spacing: 0.3px;
+    }
+    .field-input {
+      flex: 1 1 auto;
+      font-family: inherit;
+      font-size: 13px;
+      color: #d9ffe6;
+      background: #0b170e;
+      border: 1px solid #1f7a45;
+      padding: 9px 12px;
+    }
+    .field-input::placeholder { color: #2a8a52; }
+
+    .icon-btn {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: inherit;
+      font-size: 11px;
+      letter-spacing: 0.3px;
+      padding: 9px 12px;
+      background: transparent;
+      border: 1px solid #1f7a45;
+      color: #7be8a4;
+      white-space: nowrap;
+    }
+    .eye-btn {
+      flex: 0 0 auto;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid #1f7a45;
+      color: #7be8a4;
+    }
+
+    .footer-row {
+      max-width: 760px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 14px;
+      margin-top: 6px;
+    }
+    .btn {
+      font-family: inherit;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      padding: 13px 22px;
+      border: 1px solid #1f7a45;
+    }
+    .btn-outline {
+      background: transparent;
+      color: #7be8a4;
+    }
+    .btn-primary {
+      background: #22ff66;
+      border-color: #22ff66;
+      color: #04140a;
+      font-weight: 700;
+    }
+
+    svg.icon { width: 14px; height: 14px; flex: 0 0 auto; }
+  </style>
+</helmet>
+
+<div class="app-shell mono">
+
+  <div class="topbar">
+    <div class="brand"><span class="chevron">&gt;</span>HOLOS_MIGRATOR</div>
+    <div class="nav-buttons">
+      <button class="nav-btn accent">[ SYS.ADVANCED ]</button>
+      <button class="nav-btn accent">OPERACIONES</button>
+      <button class="nav-btn accent">LOG LOCAL</button>
+      <button class="nav-btn">SCRIPTS</button>
+      <button class="nav-btn run">EJECUTAR</button>
+      <button class="nav-btn stop">DETENER</button>
+    </div>
+  </div>
+
+  <div class="body-row">
+
+    <div class="sidebar">
+      <div class="side-item">Dashboard</div>
+      <div class="side-item">Log Center</div>
+      <div class="side-item">Alerts</div>
+      <div class="side-item">Storage</div>
+      <div class="side-item active">Settings</div>
+      <div class="side-item">Operations</div>
+    </div>
+
+    <div class="content">
+
+      <div class="page-header">
+        <div class="page-title">Variables de entorno (Producción)</div>
+        <div class="status-pill">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3 L22 20 L2 20 Z"></path>
+            <line x1="12" y1="9" x2="12" y2="14"></line>
+            <circle cx="12" cy="17" r="0.6" fill="#f5a623"></circle>
+          </svg>
+          No existe /root/OmniSuite/.env todavía
+        </div>
+      </div>
+
+      <fieldset class="group">
+        <legend>BASE DE DATOS</legend>
+        <div class="field-col">
+          <div class="field-row">
+            <label class="field-label">POSTGRES_DB</label>
+            <input class="field-input" value="HolosCoreOpsPostgres" readonly>
+          </div>
+          <div class="field-row">
+            <label class="field-label">POSTGRES_USER</label>
+            <input class="field-input" value="holoscoreops" readonly>
+          </div>
+          <div class="field-row">
+            <label class="field-label">POSTGRES_PASSWORD</label>
+            <input class="field-input" value="••••••••••••••••" readonly>
+            <button class="icon-btn">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+              Generar
+            </button>
+            <button class="eye-btn">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#7be8a4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>APLICACIÓN (auto-derivadas de Servidor: 187.7.24.119)</legend>
+        <div class="field-col">
+          <div class="field-row">
+            <label class="field-label">APP_SERVER_ROOT</label>
+            <input class="field-input" value="http://187.7.24.119/" readonly>
+            <button class="icon-btn">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+              usar IP actual
+            </button>
+          </div>
+          <div class="field-row">
+            <label class="field-label">APP_CLIENT_ROOT</label>
+            <input class="field-input" value="http://187.7.24.119/" readonly>
+            <button class="icon-btn">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+              usar IP actual
+            </button>
+          </div>
+          <div class="field-row">
+            <label class="field-label">APP_CORS_ORIGINS</label>
+            <input class="field-input" value="http://187.7.24.119" readonly>
+            <button class="icon-btn">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+              usar IP actual
+            </button>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>SEGURIDAD</legend>
+        <div class="field-col">
+          <div class="field-row">
+            <label class="field-label">JWT_SECURITY_KEY</label>
+            <input class="field-input" value="••••••••••••••••••••••••••••••••••••" readonly>
+            <button class="icon-btn">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+              Generar
+            </button>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="footer-row">
+        <button class="btn btn-outline">Leer .env actual del servidor</button>
+        <button class="btn btn-primary">Escribir .env al servidor</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

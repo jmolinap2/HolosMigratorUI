@@ -472,7 +472,7 @@ partial class MainShellForm
         _txtComposeFile.Name = "_txtComposeFile";
         _txtComposeFile.Size = new Size(221, 31);
         _txtComposeFile.TabIndex = 9;
-        _txtComposeFile.Text = "docker-compose.hostinger.yml";
+        _txtComposeFile.Text = "docker-compose.postgresql.production.yml";
         // 
         // _lblGitToken
         // 

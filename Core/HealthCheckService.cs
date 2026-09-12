@@ -1,6 +1,7 @@
 using System.Net.Sockets;
 using System.Globalization;
 using System.IO;
+using System.Text;
 using Renci.SshNet;
 
 namespace HolosMigratorUI.Core;
@@ -252,20 +253,126 @@ public static class HealthCheckService
         return TryRunSshCommandAsync(host, user, port, keyPath, password, remoteCommand, timeoutMs);
     }
 
-    private static Task<string?> TryRunSshCommandAsync(
-        string host,
-        string user,
-        int port,
-        string? keyPath,
-        string? password,
-        string remoteCommand,
-        int timeoutMs)
+    public sealed record PreflightCheck(string Label, bool Ok, string? Detail = null);
+
+    /// <summary>
+    /// Corre todas las verificaciones previas al deploy en una sola conexion SSH.
+    /// Devuelve null si ni siquiera se pudo conectar/autenticar (el resto de checks
+    /// no tiene sentido en ese caso).
+    /// </summary>
+    public static async Task<IReadOnlyList<PreflightCheck>?> TryRunPreflightAsync(
+        string host, string user, int port, string? keyPath, string? password,
+        string remoteRepoPath, string branch, string composeFile, int timeoutMs = 15000)
+    {
+        var repo = remoteRepoPath.Trim().TrimEnd('/');
+        var script =
+            "bash -lc '" +
+            $"REPO=\"{repo}\"; BRANCH=\"{branch}\"; COMPOSE=\"{composeFile}\"; " +
+            "command -v git >/dev/null 2>&1 && echo GIT_OK=1 || echo GIT_OK=0; " +
+            "command -v docker >/dev/null 2>&1 && echo DOCKER_OK=1 || echo DOCKER_OK=0; " +
+            "docker compose version >/dev/null 2>&1 && echo COMPOSE_CLI_OK=1 || echo COMPOSE_CLI_OK=0; " +
+            "if [ -d \"$REPO/.git\" ]; then echo REPO_OK=1; " +
+            "git -C \"$REPO\" rev-parse --verify \"$BRANCH\" >/dev/null 2>&1 && echo BRANCH_OK=1 || echo BRANCH_OK=0; " +
+            "else echo REPO_OK=0; echo BRANCH_OK=0; fi; " +
+            "[ -f \"$REPO/$COMPOSE\" ] && echo COMPOSE_FILE_OK=1 || echo COMPOSE_FILE_OK=0; " +
+            "[ -f \"$REPO/.env\" ] && echo ENV_OK=1 || echo ENV_OK=0" +
+            "'";
+
+        var output = await TryRunSshCommandAsync(host, user, port, keyPath, password, script, timeoutMs);
+        if (output == null)
+        {
+            return null;
+        }
+
+        var flags = ParseEnvContentPublic(output);
+        bool Flag(string key) => flags.TryGetValue(key, out var v) && v == "1";
+
+        var repoOk = Flag("REPO_OK");
+        var composeFileOk = Flag("COMPOSE_FILE_OK");
+        var envOk = Flag("ENV_OK");
+
+        return new List<PreflightCheck>
+        {
+            new("Conexión SSH", true, $"{user}@{host}"),
+            new("git, docker y docker compose instalados", Flag("GIT_OK") && Flag("DOCKER_OK") && Flag("COMPOSE_CLI_OK")),
+            new($"Repositorio clonado en {repo}", repoOk),
+            new($"Rama \"{branch}\" existe en el remoto", repoOk && Flag("BRANCH_OK"), repoOk ? null : "El repo remoto no existe todavía"),
+            new($"{composeFile} existe en el repo remoto", composeFileOk),
+            new($"{repo}/.env existe", envOk, envOk ? null : "Configúralo en Settings antes de desplegar"),
+        };
+    }
+
+    private static Dictionary<string, string> ParseEnvContentPublic(string content)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var raw in content.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
+        {
+            var sep = raw.IndexOf('=');
+            if (sep <= 0) continue;
+            result[raw[..sep].Trim()] = raw[(sep + 1)..].Trim();
+        }
+        return result;
+    }
+
+    private const string RemoteFileNotFoundMarker = "__HOLOS_FILE_NOT_FOUND__";
+
+    /// <summary>
+    /// Lee un archivo remoto por SSH. Devuelve null si la conexion falla,
+    /// o cadena vacia con <see cref="RemoteFileNotFoundMarker"/> si el archivo no existe (usar
+    /// <see cref="IsRemoteFileNotFound"/> para distinguirlo de un archivo vacio real).
+    /// </summary>
+    public static Task<string?> TryReadRemoteFileAsync(
+        string host, string user, int port, string? keyPath, string? password,
+        string remotePath, int timeoutMs = 10000)
+    {
+        var quoted = remotePath.Replace("'", "'\\''");
+        var cmd = $"bash -lc \"cat '{quoted}' 2>/dev/null || echo {RemoteFileNotFoundMarker}\"";
+        return TryRunSshCommandAsync(host, user, port, keyPath, password, cmd, timeoutMs);
+    }
+
+    public static bool IsRemoteFileNotFound(string? output) =>
+        output != null && output.Trim() == RemoteFileNotFoundMarker;
+
+    /// <summary>
+    /// Sube contenido a un archivo remoto via SFTP (evita problemas de escapado de shell
+    /// con secretos que contienen comillas, signos $, etc.). Devuelve false si falla.
+    /// </summary>
+    public static Task<bool> WriteRemoteFileAsync(
+        string host, string user, int port, string? keyPath, string? password,
+        string remotePath, string content, int timeoutMs = 15000)
     {
         if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(user))
         {
-            return Task.FromResult<string?>(null);
+            return Task.FromResult(false);
         }
 
+        var connectionInfo = BuildConnectionInfo(host, user, port, keyPath, password, timeoutMs);
+        if (connectionInfo == null)
+        {
+            return Task.FromResult(false);
+        }
+
+        return Task.Run(() =>
+        {
+            try
+            {
+                using var client = new SftpClient(connectionInfo);
+                client.Connect();
+                using var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
+                client.UploadFile(stream, remotePath, true);
+                client.Disconnect();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        });
+    }
+
+    private static ConnectionInfo? BuildConnectionInfo(
+        string host, string user, int port, string? keyPath, string? password, int timeoutMs)
+    {
         AuthenticationMethod? keyAuth = null;
         AuthenticationMethod? passAuth = null;
 
@@ -273,14 +380,9 @@ public static class HealthCheckService
         {
             try
             {
-                if (!string.IsNullOrWhiteSpace(password))
-                {
-                    keyAuth = new PrivateKeyAuthenticationMethod(user, new PrivateKeyFile(keyPath, password));
-                }
-                else
-                {
-                    keyAuth = new PrivateKeyAuthenticationMethod(user, new PrivateKeyFile(keyPath));
-                }
+                keyAuth = !string.IsNullOrWhiteSpace(password)
+                    ? new PrivateKeyAuthenticationMethod(user, new PrivateKeyFile(keyPath, password))
+                    : new PrivateKeyAuthenticationMethod(user, new PrivateKeyFile(keyPath));
             }
             catch
             {
@@ -306,13 +408,34 @@ public static class HealthCheckService
 
         if (methods.Count == 0)
         {
-            return Task.FromResult<string?>(null);
+            return null;
         }
 
-        var connectionInfo = new ConnectionInfo(host, port, user, [.. methods])
+        return new ConnectionInfo(host, port, user, [.. methods])
         {
             Timeout = TimeSpan.FromMilliseconds(timeoutMs)
         };
+    }
+
+    private static Task<string?> TryRunSshCommandAsync(
+        string host,
+        string user,
+        int port,
+        string? keyPath,
+        string? password,
+        string remoteCommand,
+        int timeoutMs)
+    {
+        if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(user))
+        {
+            return Task.FromResult<string?>(null);
+        }
+
+        var connectionInfo = BuildConnectionInfo(host, user, port, keyPath, password, timeoutMs);
+        if (connectionInfo == null)
+        {
+            return Task.FromResult<string?>(null);
+        }
 
         return Task.Run(() =>
         {

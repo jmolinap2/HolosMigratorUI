@@ -273,10 +273,21 @@ public class SettingsUserControl : UserControl
     private readonly Func<string> _serverUserProvider;
     private readonly Func<string> _sshKeyPathProvider;
     private readonly Func<string> _sshPasswordProvider;
+    private readonly Func<string> _remoteRepoPathProvider;
     private DataGridView _gridEnv = new();
 
+    private readonly TextBox _txtPgDb = new() { Text = "HolosCoreOpsPostgres" };
+    private readonly TextBox _txtPgUser = new() { Text = "holoscoreops" };
+    private readonly TextBox _txtPgPassword = new() { PasswordChar = '●' };
+    private readonly TextBox _txtAppServerRoot = new();
+    private readonly TextBox _txtAppClientRoot = new();
+    private readonly TextBox _txtAppCorsOrigins = new();
+    private readonly TextBox _txtJwtKey = new() { PasswordChar = '●' };
+    private readonly CheckBox _chkShowSecrets = new() { Text = "Mostrar secretos", AutoSize = true };
+    private readonly Label _lblDeployEnvStatus = new() { AutoSize = true };
+
     public SettingsUserControl()
-        : this(() => string.Empty, () => 22, () => string.Empty, () => string.Empty, () => string.Empty)
+        : this(() => string.Empty, () => 22, () => string.Empty, () => string.Empty, () => string.Empty, () => "/root/OmniSuite")
     {
     }
 
@@ -285,13 +296,15 @@ public class SettingsUserControl : UserControl
         Func<int> sshPortProvider,
         Func<string> serverUserProvider,
         Func<string> sshKeyPathProvider,
-        Func<string> sshPasswordProvider)
+        Func<string> sshPasswordProvider,
+        Func<string>? remoteRepoPathProvider = null)
     {
         _hostProvider = hostProvider;
         _sshPortProvider = sshPortProvider;
         _serverUserProvider = serverUserProvider;
         _sshKeyPathProvider = sshKeyPathProvider;
         _sshPasswordProvider = sshPasswordProvider;
+        _remoteRepoPathProvider = remoteRepoPathProvider ?? (() => "/root/OmniSuite");
 
         BackColor = Color.FromArgb(9, 9, 11);
         ForeColor = Color.Cyan;
@@ -353,6 +366,7 @@ public class SettingsUserControl : UserControl
         Controls.Add(envPanel);
         Controls.Add(infoText);
         Controls.Add(new Label { Text = "VARIABLES DE ENTORNO VPS", Dock = DockStyle.Top, Font = new Font("Consolas", 14, FontStyle.Bold), Height = 40, ForeColor = Color.Cyan });
+        Controls.Add(BuildDeployEnvSection());
 
         if (LicenseManager.UsageMode != LicenseUsageMode.Designtime
             && !string.IsNullOrWhiteSpace(_hostProvider())
@@ -457,6 +471,325 @@ public class SettingsUserControl : UserControl
 
         File.WriteAllText(fd.FileName, sb.ToString(), Encoding.UTF8);
         MessageBox.Show("Variables exportadas.", "OK", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    private string RemoteEnvPath => _remoteRepoPathProvider().Trim().TrimEnd('/') + "/.env";
+
+    private Panel BuildDeployEnvSection()
+    {
+        var root = new Panel { Dock = DockStyle.Top, Height = 372, Padding = new Padding(20, 10, 20, 10) };
+
+        var title = new Label
+        {
+            Text = "VARIABLES DE ENTORNO DE PRODUCCIÓN (.env remoto)",
+            Dock = DockStyle.Top,
+            Height = 30,
+            Font = new Font("Consolas", 12, FontStyle.Bold),
+            ForeColor = Color.FromArgb(150, 237, 255)
+        };
+
+        _lblDeployEnvStatus.Text = "Estado desconocido — pulsa \"Leer .env actual del servidor\".";
+        _lblDeployEnvStatus.ForeColor = Color.FromArgb(184, 206, 229);
+        _lblDeployEnvStatus.Font = new Font("Consolas", 9F);
+
+        _chkShowSecrets.ForeColor = Color.FromArgb(184, 206, 229);
+        _chkShowSecrets.CheckedChanged += (_, _) =>
+        {
+            var reveal = _chkShowSecrets.Checked;
+            _txtPgPassword.PasswordChar = reveal ? '\0' : '●';
+            _txtJwtKey.PasswordChar = reveal ? '\0' : '●';
+        };
+
+        var statusRow = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 26, WrapContents = false };
+        statusRow.Controls.Add(_lblDeployEnvStatus);
+
+        var showRow = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 24, WrapContents = false };
+        showRow.Controls.Add(_chkShowSecrets);
+
+        var table = new TableLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            Height = 246,
+            ColumnCount = 3,
+            RowCount = 7
+        };
+        table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 190));
+        table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160));
+        for (var i = 0; i < 7; i++)
+        {
+            table.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
+        }
+
+        var btnGenPgPassword = CreateSmallButton("Generar");
+        btnGenPgPassword.Click += (_, _) => _txtPgPassword.Text = SecretGenerator.Generate(24);
+
+        var btnGenJwt = CreateSmallButton("Generar");
+        btnGenJwt.Click += (_, _) => _txtJwtKey.Text = SecretGenerator.Generate(64);
+
+        var btnUseIpServer = CreateSmallButton("usar IP actual");
+        btnUseIpServer.Click += (_, _) => _txtAppServerRoot.Text = $"http://{_hostProvider().Trim()}/";
+
+        var btnUseIpClient = CreateSmallButton("usar IP actual");
+        btnUseIpClient.Click += (_, _) => _txtAppClientRoot.Text = $"http://{_hostProvider().Trim()}/";
+
+        var btnUseIpCors = CreateSmallButton("usar IP actual");
+        btnUseIpCors.Click += (_, _) => _txtAppCorsOrigins.Text = $"http://{_hostProvider().Trim()}";
+
+        AddFieldRow(table, 0, "POSTGRES_DB", _txtPgDb, null);
+        AddFieldRow(table, 1, "POSTGRES_USER", _txtPgUser, null);
+        AddFieldRow(table, 2, "POSTGRES_PASSWORD", _txtPgPassword, btnGenPgPassword);
+        AddFieldRow(table, 3, "APP_SERVER_ROOT", _txtAppServerRoot, btnUseIpServer);
+        AddFieldRow(table, 4, "APP_CLIENT_ROOT", _txtAppClientRoot, btnUseIpClient);
+        AddFieldRow(table, 5, "APP_CORS_ORIGINS", _txtAppCorsOrigins, btnUseIpCors);
+        AddFieldRow(table, 6, "JWT_SECURITY_KEY", _txtJwtKey, btnGenJwt);
+
+        var btnRead = new Button
+        {
+            Text = "Leer .env actual del servidor",
+            FlatStyle = FlatStyle.Flat,
+            Width = 230,
+            Height = 36,
+            ForeColor = Color.FromArgb(173, 220, 255),
+            BackColor = Color.FromArgb(24, 36, 52)
+        };
+        btnRead.FlatAppearance.BorderColor = Color.FromArgb(43, 58, 76);
+        btnRead.Click += async (_, _) => await LoadRemoteEnvAsync();
+
+        var btnWrite = new Button
+        {
+            Text = "Escribir .env al servidor",
+            FlatStyle = FlatStyle.Flat,
+            Width = 210,
+            Height = 36,
+            ForeColor = Color.FromArgb(10, 20, 14),
+            BackColor = Color.FromArgb(34, 255, 102),
+            Font = new Font("Segoe UI Semibold", 9.5F, FontStyle.Bold)
+        };
+        btnWrite.FlatAppearance.BorderColor = Color.FromArgb(34, 255, 102);
+        btnWrite.Click += async (_, _) => await WriteRemoteEnvAsync();
+
+        var footerRow = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            Height = 44,
+            FlowDirection = FlowDirection.RightToLeft,
+            WrapContents = false
+        };
+        footerRow.Controls.Add(btnWrite);
+        footerRow.Controls.Add(btnRead);
+
+        root.Controls.Add(footerRow);
+        root.Controls.Add(table);
+        root.Controls.Add(showRow);
+        root.Controls.Add(statusRow);
+        root.Controls.Add(title);
+
+        return root;
+    }
+
+    private static Button CreateSmallButton(string text) => new()
+    {
+        Text = text,
+        FlatStyle = FlatStyle.Flat,
+        Width = 150,
+        Height = 26,
+        Font = new Font("Consolas", 8.5F),
+        ForeColor = Color.FromArgb(150, 237, 255),
+        BackColor = Color.FromArgb(19, 47, 71),
+        FlatAppearance = { BorderColor = Color.FromArgb(54, 121, 172) }
+    };
+
+    private static void AddFieldRow(TableLayoutPanel table, int row, string labelText, TextBox textBox, Button? actionButton)
+    {
+        var label = new Label
+        {
+            Text = labelText,
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleLeft,
+            Font = new Font("Consolas", 9F),
+            ForeColor = Color.FromArgb(150, 200, 220)
+        };
+        textBox.Dock = DockStyle.Fill;
+        textBox.Font = new Font("Consolas", 9.5F);
+        textBox.BackColor = Color.FromArgb(18, 28, 40);
+        textBox.ForeColor = Color.FromArgb(245, 248, 251);
+        textBox.BorderStyle = BorderStyle.FixedSingle;
+        textBox.Margin = new Padding(0, 4, 8, 4);
+
+        table.Controls.Add(label, 0, row);
+        table.Controls.Add(textBox, 1, row);
+        if (actionButton != null)
+        {
+            actionButton.Margin = new Padding(0, 3, 0, 3);
+            actionButton.Dock = DockStyle.Left;
+            table.Controls.Add(actionButton, 2, row);
+        }
+    }
+
+    private async Task LoadRemoteEnvAsync()
+    {
+        var host = _hostProvider().Trim();
+        var user = _serverUserProvider().Trim();
+        var keyPath = _sshKeyPathProvider().Trim();
+        var password = _sshPasswordProvider().Trim();
+        var port = _sshPortProvider();
+
+        if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(user))
+        {
+            MessageBox.Show("Configura Servidor y Usuario para leer el .env remoto.", "Faltan datos", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        _lblDeployEnvStatus.Text = "Leyendo .env remoto...";
+        _lblDeployEnvStatus.ForeColor = Color.FromArgb(184, 206, 229);
+
+        var path = RemoteEnvPath;
+        var content = await HealthCheckService.TryReadRemoteFileAsync(
+            host, user, port,
+            string.IsNullOrWhiteSpace(keyPath) ? null : keyPath,
+            string.IsNullOrWhiteSpace(password) ? null : password,
+            path);
+
+        if (content == null)
+        {
+            _lblDeployEnvStatus.Text = $"⚠ No se pudo conectar al servidor para leer {path}.";
+            _lblDeployEnvStatus.ForeColor = Color.FromArgb(255, 120, 120);
+            return;
+        }
+
+        if (HealthCheckService.IsRemoteFileNotFound(content))
+        {
+            _lblDeployEnvStatus.Text = $"⚠ No existe {path} todavía — se creará al escribir.";
+            _lblDeployEnvStatus.ForeColor = Color.FromArgb(245, 166, 35);
+            return;
+        }
+
+        var values = ParseEnvContent(content);
+        SetIfPresent(values, "POSTGRES_DB", _txtPgDb);
+        SetIfPresent(values, "POSTGRES_USER", _txtPgUser);
+        SetIfPresent(values, "POSTGRES_PASSWORD", _txtPgPassword);
+        SetIfPresent(values, "APP_SERVER_ROOT", _txtAppServerRoot);
+        SetIfPresent(values, "APP_CLIENT_ROOT", _txtAppClientRoot);
+        SetIfPresent(values, "APP_CORS_ORIGINS", _txtAppCorsOrigins);
+        SetIfPresent(values, "JWT_SECURITY_KEY", _txtJwtKey);
+
+        _lblDeployEnvStatus.Text = $"✓ Cargado desde {path}.";
+        _lblDeployEnvStatus.ForeColor = Color.FromArgb(120, 255, 160);
+    }
+
+    private async Task WriteRemoteEnvAsync()
+    {
+        var host = _hostProvider().Trim();
+        var user = _serverUserProvider().Trim();
+        var keyPath = _sshKeyPathProvider().Trim();
+        var password = _sshPasswordProvider().Trim();
+        var port = _sshPortProvider();
+        var path = RemoteEnvPath;
+
+        if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(user))
+        {
+            MessageBox.Show("Configura Servidor y Usuario para escribir el .env remoto.", "Faltan datos", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var missing = new List<string>();
+        if (string.IsNullOrWhiteSpace(_txtPgDb.Text)) missing.Add("POSTGRES_DB");
+        if (string.IsNullOrWhiteSpace(_txtPgUser.Text)) missing.Add("POSTGRES_USER");
+        if (string.IsNullOrWhiteSpace(_txtPgPassword.Text)) missing.Add("POSTGRES_PASSWORD");
+        if (string.IsNullOrWhiteSpace(_txtAppServerRoot.Text)) missing.Add("APP_SERVER_ROOT");
+        if (string.IsNullOrWhiteSpace(_txtAppClientRoot.Text)) missing.Add("APP_CLIENT_ROOT");
+        if (string.IsNullOrWhiteSpace(_txtAppCorsOrigins.Text)) missing.Add("APP_CORS_ORIGINS");
+        if (string.IsNullOrWhiteSpace(_txtJwtKey.Text)) missing.Add("JWT_SECURITY_KEY");
+
+        if (missing.Count > 0)
+        {
+            MessageBox.Show($"Faltan valores: {string.Join(", ", missing)}", "Campos incompletos", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var confirm = MessageBox.Show(
+            $"Esto sobreescribe {path} en {host}. ¿Continuar?",
+            "Confirmar escritura remota",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning);
+
+        if (confirm != DialogResult.Yes)
+        {
+            return;
+        }
+
+        _lblDeployEnvStatus.Text = "Escribiendo .env remoto...";
+        _lblDeployEnvStatus.ForeColor = Color.FromArgb(184, 206, 229);
+
+        var content = BuildEnvContent();
+        var ok = await HealthCheckService.WriteRemoteFileAsync(
+            host, user, port,
+            string.IsNullOrWhiteSpace(keyPath) ? null : keyPath,
+            string.IsNullOrWhiteSpace(password) ? null : password,
+            path,
+            content);
+
+        if (ok)
+        {
+            _lblDeployEnvStatus.Text = $"✓ Escrito en {path}.";
+            _lblDeployEnvStatus.ForeColor = Color.FromArgb(120, 255, 160);
+        }
+        else
+        {
+            _lblDeployEnvStatus.Text = $"⚠ Fallo al escribir {path}.";
+            _lblDeployEnvStatus.ForeColor = Color.FromArgb(255, 120, 120);
+            MessageBox.Show("No se pudo escribir el archivo remoto. Revisa la conexión SSH.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private string BuildEnvContent()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("# Generado por HolosMigratorUI — Settings > Variables de entorno (Producción)");
+        sb.AppendLine($"# {DateTime.Now:yyyy-MM-dd HH:mm}");
+        sb.AppendLine();
+        sb.AppendLine($"POSTGRES_DB={_txtPgDb.Text.Trim()}");
+        sb.AppendLine($"POSTGRES_USER={_txtPgUser.Text.Trim()}");
+        sb.AppendLine($"POSTGRES_PASSWORD={_txtPgPassword.Text.Trim()}");
+        sb.AppendLine();
+        sb.AppendLine($"APP_SERVER_ROOT={_txtAppServerRoot.Text.Trim()}");
+        sb.AppendLine($"APP_CLIENT_ROOT={_txtAppClientRoot.Text.Trim()}");
+        sb.AppendLine($"APP_CORS_ORIGINS={_txtAppCorsOrigins.Text.Trim()}");
+        sb.AppendLine();
+        sb.AppendLine($"JWT_SECURITY_KEY={_txtJwtKey.Text.Trim()}");
+        return sb.ToString();
+    }
+
+    private static void SetIfPresent(IReadOnlyDictionary<string, string> values, string key, TextBox target)
+    {
+        if (values.TryGetValue(key, out var value))
+        {
+            target.Text = value;
+        }
+    }
+
+    private static Dictionary<string, string> ParseEnvContent(string content)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var raw in content.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
+        {
+            var line = raw.Trim();
+            if (line.Length == 0 || line.StartsWith('#'))
+            {
+                continue;
+            }
+
+            var sep = line.IndexOf('=');
+            if (sep <= 0)
+            {
+                continue;
+            }
+
+            result[line[..sep].Trim()] = line[(sep + 1)..].Trim();
+        }
+
+        return result;
     }
 }
 
