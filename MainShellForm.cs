@@ -137,6 +137,78 @@ public partial class MainShellForm : Form
             _txtSshPassword.UseSystemPasswordChar = !_txtSshPassword.UseSystemPasswordChar;
             _btnShowPassword.Text = _txtSshPassword.UseSystemPasswordChar ? "👁" : "🙈";
         };
+
+        _txtBranch.DropDown += async (_, _) => await PopulateBranchComboAsync();
+        _txtComposeFile.DropDown += async (_, _) => await PopulateComposeFileComboAsync();
+    }
+
+    private bool _branchListLoading;
+    private bool _composeFileListLoading;
+
+    /// <summary>
+    /// Llena el combo de "Rama" con las ramas reales del repo remoto (SSH), en vez de
+    /// depender de un valor fijo en el codigo. Se dispara al abrir el desplegable.
+    /// </summary>
+    private async Task PopulateBranchComboAsync()
+    {
+        if (_branchListLoading) return;
+        _branchListLoading = true;
+        try
+        {
+            var current = _txtBranch.Text;
+            var branches = await HealthCheckService.TryListRemoteBranchesAsync(
+                _txtServerHost.Text.Trim(), _txtServerUser.Text.Trim(), (int)_numSshPort.Value,
+                string.IsNullOrWhiteSpace(_txtSshKeyPath.Text) ? null : _txtSshKeyPath.Text.Trim(),
+                string.IsNullOrWhiteSpace(_txtSshPassword.Text) ? null : _txtSshPassword.Text,
+                _txtRemoteRepoPath.Text.Trim());
+
+            if (branches is { Count: > 0 })
+            {
+                _txtBranch.Items.Clear();
+                foreach (var branch in branches)
+                {
+                    _txtBranch.Items.Add(branch);
+                }
+                _txtBranch.Text = current;
+            }
+        }
+        finally
+        {
+            _branchListLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// Llena el combo de "Archivo compose" con los *.yml que realmente existen en el repo
+    /// remoto (SSH), en vez de depender de un valor fijo en el codigo.
+    /// </summary>
+    private async Task PopulateComposeFileComboAsync()
+    {
+        if (_composeFileListLoading) return;
+        _composeFileListLoading = true;
+        try
+        {
+            var current = _txtComposeFile.Text;
+            var files = await HealthCheckService.TryListRemoteComposeFilesAsync(
+                _txtServerHost.Text.Trim(), _txtServerUser.Text.Trim(), (int)_numSshPort.Value,
+                string.IsNullOrWhiteSpace(_txtSshKeyPath.Text) ? null : _txtSshKeyPath.Text.Trim(),
+                string.IsNullOrWhiteSpace(_txtSshPassword.Text) ? null : _txtSshPassword.Text,
+                _txtRemoteRepoPath.Text.Trim());
+
+            if (files is { Count: > 0 })
+            {
+                _txtComposeFile.Items.Clear();
+                foreach (var file in files)
+                {
+                    _txtComposeFile.Items.Add(file);
+                }
+                _txtComposeFile.Text = current;
+            }
+        }
+        finally
+        {
+            _composeFileListLoading = false;
+        }
     }
 
     private void ApplyUiState()

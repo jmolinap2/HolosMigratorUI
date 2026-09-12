@@ -31,3 +31,4 @@ packages/
 # Generated files
 Generated Files/
 migrator_logs.txt
+.vscode/settings.json

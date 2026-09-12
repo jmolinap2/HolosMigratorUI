@@ -253,6 +253,51 @@ public static class HealthCheckService
         return TryRunSshCommandAsync(host, user, port, keyPath, password, remoteCommand, timeoutMs);
     }
 
+    /// <summary>
+    /// Lista los archivos *.yml del repo remoto (para poblar el combo de "Archivo compose"
+    /// con lo que realmente existe en el servidor, en vez de un valor fijo).
+    /// </summary>
+    public static async Task<IReadOnlyList<string>?> TryListRemoteComposeFilesAsync(
+        string host, string user, int port, string? keyPath, string? password,
+        string remoteRepoPath, int timeoutMs = 10000)
+    {
+        var repo = remoteRepoPath.Trim().TrimEnd('/');
+        var cmd = $"bash -lc \"cd '{repo}' 2>/dev/null && ls -1 *.yml 2>/dev/null | sort\"";
+        var output = await TryRunSshCommandAsync(host, user, port, keyPath, password, cmd, timeoutMs);
+        return SplitNonEmptyLines(output);
+    }
+
+    /// <summary>
+    /// Lista las ramas (locales + remotas de origin, deduplicadas) del repo remoto, para
+    /// poblar el combo de "Rama" con lo que realmente existe, no un valor fijo.
+    /// </summary>
+    public static async Task<IReadOnlyList<string>?> TryListRemoteBranchesAsync(
+        string host, string user, int port, string? keyPath, string? password,
+        string remoteRepoPath, int timeoutMs = 10000)
+    {
+        var repo = remoteRepoPath.Trim().TrimEnd('/');
+        var cmd = "bash -lc \"" +
+            $"cd '{repo}' 2>/dev/null && " +
+            "git for-each-ref --format='%(refname:short)' refs/heads/ refs/remotes/origin/ " +
+            "| sed 's#^origin/##' | grep -v '^HEAD$' | sort -u\"";
+        var output = await TryRunSshCommandAsync(host, user, port, keyPath, password, cmd, timeoutMs);
+        return SplitNonEmptyLines(output);
+    }
+
+    private static IReadOnlyList<string>? SplitNonEmptyLines(string? output)
+    {
+        if (output == null)
+        {
+            return null;
+        }
+
+        return output
+            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+            .Select(l => l.Trim())
+            .Where(l => l.Length > 0)
+            .ToList();
+    }
+
     public sealed record PreflightCheck(string Label, bool Ok, string? Detail = null);
 
     /// <summary>

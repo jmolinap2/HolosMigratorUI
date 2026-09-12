@@ -40,8 +40,8 @@ partial class MainShellForm
     private ComboBox _cmbAction;
     private TextBox _txtRepoPath;
     private TextBox _txtRemoteRepoPath;
-    private TextBox _txtBranch;
-    private TextBox _txtComposeFile;
+    private ComboBox _txtBranch;
+    private ComboBox _txtComposeFile;
     private Label _lblGitToken;
     private TextBox _txtGitToken;
 
@@ -116,9 +116,9 @@ partial class MainShellForm
         _lblRemoteRepoPath = new Label();
         _txtRemoteRepoPath = new TextBox();
         _lblBranch = new Label();
-        _txtBranch = new TextBox();
+        _txtBranch = new ComboBox();
         _lblComposeFile = new Label();
-        _txtComposeFile = new TextBox();
+        _txtComposeFile = new ComboBox();
         _lblGitToken = new Label();
         _txtGitToken = new TextBox();
         _grpSsh = new GroupBox();
@@ -440,8 +440,9 @@ partial class MainShellForm
         // _txtBranch
         // 
         _txtBranch.BackColor = Color.FromArgb(9, 9, 11);
-        _txtBranch.BorderStyle = BorderStyle.FixedSingle;
         _txtBranch.Dock = DockStyle.Fill;
+        _txtBranch.DropDownStyle = ComboBoxStyle.DropDown;
+        _txtBranch.FlatStyle = FlatStyle.Flat;
         _txtBranch.ForeColor = Color.FromArgb(0, 255, 255);
         _txtBranch.Location = new Point(247, 121);
         _txtBranch.Margin = new Padding(4);
@@ -464,15 +465,16 @@ partial class MainShellForm
         // _txtComposeFile
         // 
         _txtComposeFile.BackColor = Color.FromArgb(9, 9, 11);
-        _txtComposeFile.BorderStyle = BorderStyle.FixedSingle;
         _txtComposeFile.Dock = DockStyle.Fill;
+        _txtComposeFile.DropDownStyle = ComboBoxStyle.DropDown;
+        _txtComposeFile.FlatStyle = FlatStyle.Flat;
         _txtComposeFile.ForeColor = Color.FromArgb(0, 255, 255);
         _txtComposeFile.Location = new Point(247, 160);
         _txtComposeFile.Margin = new Padding(4);
         _txtComposeFile.Name = "_txtComposeFile";
         _txtComposeFile.Size = new Size(221, 31);
         _txtComposeFile.TabIndex = 9;
-        _txtComposeFile.Text = "docker-compose.postgresql.production.yml";
+        _txtComposeFile.Text = "docker-compose.hostinger.yml";
         // 
         // _lblGitToken
         // 
