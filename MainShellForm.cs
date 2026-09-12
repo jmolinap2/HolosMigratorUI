@@ -196,6 +196,11 @@ public partial class MainShellForm : Form
             var effectiveSshAuth = GetEffectiveSshAuthMode();
             var hasPassword = !string.IsNullOrWhiteSpace(_txtSshPassword.Text);
 
+            if (!await RunPreflightAsync())
+            {
+                return;
+            }
+
             _panelStatus.Visible = false;
             SaveSettings();
 
@@ -221,6 +226,42 @@ public partial class MainShellForm : Form
         {
             AppendLog("ERROR: " + ex.Message);
             MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    /// <summary>
+    /// Muestra el modal de verificacion pre-vuelo. Devuelve true si el deploy debe continuar
+    /// (todo paso, o el usuario forzo "Ejecutar de todas formas"), false si hay que abortar.
+    /// </summary>
+    private async Task<bool> RunPreflightAsync()
+    {
+        var host = _txtServerHost.Text.Trim();
+        var user = _txtServerUser.Text.Trim();
+        var port = (int)_numSshPort.Value;
+        var keyPath = _txtSshKeyPath.Text.Trim();
+        var password = _txtSshPassword.Text;
+        var remoteRepoPath = _txtRemoteRepoPath.Text.Trim();
+        var branch = string.IsNullOrWhiteSpace(_txtBranch.Text) ? "develop" : _txtBranch.Text.Trim();
+        var composeFile = _txtComposeFile.Text.Trim();
+
+        using var dialog = new PreflightDialog(() => HealthCheckService.TryRunPreflightAsync(
+            host, user, port,
+            string.IsNullOrWhiteSpace(keyPath) ? null : keyPath,
+            string.IsNullOrWhiteSpace(password) ? null : password,
+            remoteRepoPath, branch, composeFile));
+
+        dialog.ShowDialog(this);
+
+        switch (dialog.Outcome)
+        {
+            case PreflightOutcome.Proceed:
+                return true;
+            case PreflightOutcome.GoToSettings:
+                ShowSettingsModule();
+                return false;
+            default:
+                AppendLog("Deploy cancelado en la verificación pre-vuelo.");
+                return false;
         }
     }
 
