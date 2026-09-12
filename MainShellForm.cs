@@ -603,6 +603,35 @@ public partial class MainShellForm : Form
         _runningProcess = null;
         _btnRun.Enabled = true;
         _btnStop.Enabled = true;
+
+        if (success && GetSelectedAction() == "Deploy completo")
+        {
+            await RunPostDeployVerificationAsync();
+        }
+    }
+
+    /// <summary>
+    /// El script puede reportar exito (codigo 0) aunque un contenedor haya quedado en
+    /// crash-loop o un smoke check haya respondido 502 — no valida ninguna de las dos
+    /// cosas por si solo. Esta verificacion corre aparte y muestra el estado real.
+    /// </summary>
+    private async Task RunPostDeployVerificationAsync()
+    {
+        var host = _txtServerHost.Text.Trim();
+        var user = _txtServerUser.Text.Trim();
+        var port = (int)_numSshPort.Value;
+        var keyPath = _txtSshKeyPath.Text.Trim();
+        var password = _txtSshPassword.Text;
+        var remoteRepoPath = _txtRemoteRepoPath.Text.Trim();
+        var composeFile = _txtComposeFile.Text.Trim();
+
+        using var dialog = new PostDeployDialog(() => HealthCheckService.TryRunPostDeployVerificationAsync(
+            host, user, port,
+            string.IsNullOrWhiteSpace(keyPath) ? null : keyPath,
+            string.IsNullOrWhiteSpace(password) ? null : password,
+            remoteRepoPath, composeFile));
+
+        dialog.ShowDialog(this);
     }
 
     private static readonly (string Pattern, int Value)[] _progressSteps =

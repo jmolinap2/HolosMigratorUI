@@ -359,6 +359,77 @@ public static class HealthCheckService
         return result;
     }
 
+    /// <summary>
+    /// Verificacion posterior al deploy: revisa el estado real de cada contenedor
+    /// (un contenedor en crash-loop aparece como "restarting", no como error del script)
+    /// y valida el codigo HTTP real de los smoke checks (curl "tiene exito" aunque
+    /// el servidor responda 502, asi que el script no lo detecta por si solo).
+    /// </summary>
+    public static async Task<IReadOnlyList<PreflightCheck>?> TryRunPostDeployVerificationAsync(
+        string host, string user, int port, string? keyPath, string? password,
+        string remoteRepoPath, string composeFile, int timeoutMs = 20000)
+    {
+        var repo = remoteRepoPath.Trim().TrimEnd('/');
+        var script =
+            "bash -lc '" +
+            $"cd \"{repo}\" || exit 9; " +
+            "echo ===PS===; " +
+            $"docker compose -f \"{composeFile}\" ps --format \"{{{{.Name}}}}|{{{{.State}}}}\"; " +
+            "echo ===ABP===; " +
+            "curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1/AbpUserConfiguration/GetAll || echo 000; " +
+            "echo; echo ===ANTI===; " +
+            "curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1/AntiForgery/SetCookie || echo 000; " +
+            "echo'";
+
+        var output = await TryRunSshCommandAsync(host, user, port, keyPath, password, script, timeoutMs);
+        if (output == null)
+        {
+            return null;
+        }
+
+        var psSection = ExtractSection(output, "===PS===", "===ABP===");
+        var abpCode = ExtractSection(output, "===ABP===", "===ANTI===").Trim();
+        var antiCode = output[(output.IndexOf("===ANTI===", StringComparison.Ordinal) + "===ANTI===".Length)..].Trim();
+
+        var results = new List<PreflightCheck>();
+
+        foreach (var line in psSection.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
+        {
+            var parts = line.Split('|', 2);
+            if (parts.Length != 2) continue;
+
+            var name = parts[0].Trim();
+            var state = parts[1].Trim();
+            var healthy = state.Equals("running", StringComparison.OrdinalIgnoreCase);
+            results.Add(new PreflightCheck(
+                $"Contenedor {name}",
+                healthy,
+                healthy ? null : $"Estado: {state}. Revisa: docker compose -f {composeFile} logs {name}"));
+        }
+
+        results.Add(new PreflightCheck(
+            "AbpUserConfiguration/GetAll responde 200",
+            abpCode == "200",
+            abpCode == "200" ? null : $"Respondió HTTP {abpCode}"));
+
+        results.Add(new PreflightCheck(
+            "AntiForgery/SetCookie responde 200",
+            antiCode == "200",
+            antiCode == "200" ? null : $"Respondió HTTP {antiCode}"));
+
+        return results;
+    }
+
+    private static string ExtractSection(string output, string startMarker, string endMarker)
+    {
+        var start = output.IndexOf(startMarker, StringComparison.Ordinal);
+        if (start < 0) return string.Empty;
+        start += startMarker.Length;
+
+        var end = output.IndexOf(endMarker, start, StringComparison.Ordinal);
+        return end < 0 ? output[start..] : output[start..end];
+    }
+
     private const string RemoteFileNotFoundMarker = "__HOLOS_FILE_NOT_FOUND__";
 
     /// <summary>
