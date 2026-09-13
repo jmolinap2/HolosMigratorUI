@@ -44,6 +44,8 @@ partial class MainShellForm
     private ComboBox _txtComposeFile;
     private Label _lblGitToken;
     private TextBox _txtGitToken;
+    private Label _lblGitAuthMethod;
+    private ComboBox _cmbGitAuthMethod;
 
     private TextBox _txtServerHost;
     private TextBox _txtServerUser;
@@ -121,6 +123,8 @@ partial class MainShellForm
         _txtComposeFile = new ComboBox();
         _lblGitToken = new Label();
         _txtGitToken = new TextBox();
+        _lblGitAuthMethod = new Label();
+        _cmbGitAuthMethod = new ComboBox();
         _grpSsh = new GroupBox();
         _tblSsh = new TableLayoutPanel();
         _lblServerHost = new Label();
@@ -337,20 +341,23 @@ partial class MainShellForm
         _tblGeneral.Controls.Add(_txtComposeFile, 1, 4);
         _tblGeneral.Controls.Add(_lblGitToken, 0, 5);
         _tblGeneral.Controls.Add(_txtGitToken, 1, 5);
+        _tblGeneral.Controls.Add(_lblGitAuthMethod, 0, 6);
+        _tblGeneral.Controls.Add(_cmbGitAuthMethod, 1, 6);
         _tblGeneral.Dock = DockStyle.Top;
         _tblGeneral.Font = new Font("Consolas", 10F);
         _tblGeneral.ForeColor = Color.FromArgb(0, 255, 65);
         _tblGeneral.Location = new Point(15, 41);
         _tblGeneral.Margin = new Padding(4, 5, 4, 5);
         _tblGeneral.Name = "_tblGeneral";
-        _tblGeneral.RowCount = 6;
+        _tblGeneral.RowCount = 7;
         _tblGeneral.RowStyles.Add(new RowStyle());
         _tblGeneral.RowStyles.Add(new RowStyle());
         _tblGeneral.RowStyles.Add(new RowStyle());
         _tblGeneral.RowStyles.Add(new RowStyle());
         _tblGeneral.RowStyles.Add(new RowStyle());
         _tblGeneral.RowStyles.Add(new RowStyle());
-        _tblGeneral.Size = new Size(472, 234);
+        _tblGeneral.RowStyles.Add(new RowStyle());
+        _tblGeneral.Size = new Size(472, 273);
         _tblGeneral.TabIndex = 0;
         // 
         // _lblAction
@@ -499,7 +506,32 @@ partial class MainShellForm
         _txtGitToken.Size = new Size(221, 31);
         _txtGitToken.TabIndex = 11;
         _txtGitToken.UseSystemPasswordChar = true;
-        // 
+        //
+        // _lblGitAuthMethod
+        //
+        _lblGitAuthMethod.Anchor = AnchorStyles.Left;
+        _lblGitAuthMethod.AutoSize = true;
+        _lblGitAuthMethod.Location = new Point(4, 242);
+        _lblGitAuthMethod.Margin = new Padding(4, 6, 4, 6);
+        _lblGitAuthMethod.Name = "_lblGitAuthMethod";
+        _lblGitAuthMethod.Size = new Size(186, 23);
+        _lblGitAuthMethod.TabIndex = 12;
+        _lblGitAuthMethod.Text = "Autenticación Git:";
+        //
+        // _cmbGitAuthMethod
+        //
+        _cmbGitAuthMethod.BackColor = Color.FromArgb(9, 9, 11);
+        _cmbGitAuthMethod.Dock = DockStyle.Fill;
+        _cmbGitAuthMethod.DropDownStyle = ComboBoxStyle.DropDownList;
+        _cmbGitAuthMethod.FlatStyle = FlatStyle.Flat;
+        _cmbGitAuthMethod.ForeColor = Color.FromArgb(0, 255, 255);
+        _cmbGitAuthMethod.Items.AddRange(new object[] { "Deploy Key (SSH)", "Token (HTTPS)" });
+        _cmbGitAuthMethod.Location = new Point(247, 238);
+        _cmbGitAuthMethod.Margin = new Padding(4);
+        _cmbGitAuthMethod.Name = "_cmbGitAuthMethod";
+        _cmbGitAuthMethod.Size = new Size(221, 31);
+        _cmbGitAuthMethod.TabIndex = 13;
+        //
         // _grpSsh
         // 
         _grpSsh.BackColor = Color.FromArgb(18, 18, 23);

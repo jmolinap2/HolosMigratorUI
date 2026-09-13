@@ -307,18 +307,29 @@ public static class HealthCheckService
     /// </summary>
     public static async Task<IReadOnlyList<PreflightCheck>?> TryRunPreflightAsync(
         string host, string user, int port, string? keyPath, string? password,
-        string remoteRepoPath, string branch, string composeFile, int timeoutMs = 15000)
+        string remoteRepoPath, string branch, string composeFile,
+        string gitAuthMethod = "DeployKey", string? gitToken = null, int timeoutMs = 15000)
     {
         var repo = remoteRepoPath.Trim().TrimEnd('/');
+        var authMethod = string.Equals(gitAuthMethod, "Token", StringComparison.OrdinalIgnoreCase) ? "Token" : "DeployKey";
+        var token = gitToken ?? string.Empty;
         var script =
             "bash -lc '" +
             $"REPO=\"{repo}\"; BRANCH=\"{branch}\"; COMPOSE=\"{composeFile}\"; " +
+            $"GIT_AUTH_METHOD=\"{authMethod}\"; GIT_TOKEN=\"{token}\"; " +
             "command -v git >/dev/null 2>&1 && echo GIT_OK=1 || echo GIT_OK=0; " +
             "command -v docker >/dev/null 2>&1 && echo DOCKER_OK=1 || echo DOCKER_OK=0; " +
             "docker compose version >/dev/null 2>&1 && echo COMPOSE_CLI_OK=1 || echo COMPOSE_CLI_OK=0; " +
             "if [ -d \"$REPO/.git\" ]; then echo REPO_OK=1; " +
             "git -C \"$REPO\" rev-parse --verify \"$BRANCH\" >/dev/null 2>&1 && echo BRANCH_OK=1 || echo BRANCH_OK=0; " +
-            "else echo REPO_OK=0; echo BRANCH_OK=0; fi; " +
+            "ORIGIN_URL=\"$(git -C \"$REPO\" remote get-url origin 2>/dev/null)\"; " +
+            "REPO_SUFFIX=\"$(printf '%s' \"$ORIGIN_URL\" | sed -E 's#^(https://[^/]+/|git@[^:]+:)##')\"; " +
+            "if [ \"$GIT_AUTH_METHOD\" = \"Token\" ]; then " +
+            "EFFECTIVE_URL=\"https://git:${GIT_TOKEN}@github.com/${REPO_SUFFIX}\"; " +
+            "else EFFECTIVE_URL=\"git@github.com:${REPO_SUFFIX}\"; fi; " +
+            "git -c \"url.${EFFECTIVE_URL}.insteadOf=${ORIGIN_URL}\" -C \"$REPO\" ls-remote --exit-code origin \"$BRANCH\" >/dev/null 2>&1 " +
+            "&& echo GITAUTH_OK=1 || echo GITAUTH_OK=0; " +
+            "else echo REPO_OK=0; echo BRANCH_OK=0; echo GITAUTH_OK=0; fi; " +
             "[ -f \"$REPO/$COMPOSE\" ] && echo COMPOSE_FILE_OK=1 || echo COMPOSE_FILE_OK=0; " +
             "[ -f \"$REPO/.env\" ] && echo ENV_OK=1 || echo ENV_OK=0" +
             "'";
@@ -335,12 +346,18 @@ public static class HealthCheckService
         var repoOk = Flag("REPO_OK");
         var composeFileOk = Flag("COMPOSE_FILE_OK");
         var envOk = Flag("ENV_OK");
+        var gitAuthOk = Flag("GITAUTH_OK");
+        var authLabel = authMethod == "Token" ? "Token (HTTPS)" : "Deploy Key (SSH)";
 
         return new List<PreflightCheck>
         {
             new("Conexión SSH", true, $"{user}@{host}"),
             new("git, docker y docker compose instalados", Flag("GIT_OK") && Flag("DOCKER_OK") && Flag("COMPOSE_CLI_OK")),
             new($"Repositorio clonado en {repo}", repoOk),
+            new($"Autenticación Git con GitHub ({authLabel})", repoOk && gitAuthOk,
+                !repoOk ? "El repo remoto no existe todavía" :
+                gitAuthOk ? null :
+                authMethod == "Token" ? "El token no tiene acceso al repo (revisa Token GitHub en Settings)" : "La deploy key no está registrada o no tiene acceso (revisa Settings → GitHub Deploy Keys)"),
             new($"Rama \"{branch}\" existe en el remoto", repoOk && Flag("BRANCH_OK"), repoOk ? null : "El repo remoto no existe todavía"),
             new($"{composeFile} existe en el repo remoto", composeFileOk),
             new($"{repo}/.env existe", envOk, envOk ? null : "Configúralo en Settings antes de desplegar"),

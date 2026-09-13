@@ -61,6 +61,8 @@ public partial class MainShellForm : Form
         _cmbSshAuth.SelectedIndex = 1;
         _cmbDeployTarget.SelectedIndex = 0;
         _cmbMigrationMode.SelectedIndex = 0;
+        // Deploy Key es el metodo recomendado: no expone un token de cuenta completa.
+        _cmbGitAuthMethod.SelectedIndex = 0;
     }
 
     private void LoadEnvVariables()
@@ -97,6 +99,16 @@ public partial class MainShellForm : Form
 
             var gitToken = DotNetEnv.Env.GetString("GIT_TOKEN");
             if (!string.IsNullOrEmpty(gitToken)) _txtGitToken.Text = gitToken;
+
+            var gitAuthMethod = DotNetEnv.Env.GetString("GIT_AUTH_METHOD");
+            if (string.Equals(gitAuthMethod, "Token", StringComparison.OrdinalIgnoreCase))
+            {
+                _cmbGitAuthMethod.SelectedIndex = 1;
+            }
+            else if (string.Equals(gitAuthMethod, "DeployKey", StringComparison.OrdinalIgnoreCase))
+            {
+                _cmbGitAuthMethod.SelectedIndex = 0;
+            }
         }
         catch (Exception ex)
         {
@@ -405,7 +417,17 @@ public partial class MainShellForm : Form
             args.Add("-DeployTarget");
             args.Add(GetSelectedDeployTarget());
 
+            var gitAuthMethod = GetSelectedGitAuthMethod();
+            args.Add("-GitAuthMethod");
+            args.Add(gitAuthMethod);
+
             var gitToken = _txtGitToken.Text.Trim();
+            if (gitAuthMethod == "Token" && string.IsNullOrWhiteSpace(gitToken))
+            {
+                throw new InvalidOperationException(
+                    "Seleccionaste 'Token (HTTPS)' como autenticación Git, pero el campo Token GitHub está vacío.");
+            }
+
             if (!string.IsNullOrWhiteSpace(gitToken))
             {
                 args.Add("-GitToken");
@@ -753,6 +775,9 @@ public partial class MainShellForm : Form
 
     private string GetSelectedMigrationMode() => ParseOptionCode(_cmbMigrationMode.SelectedItem?.ToString(), "B");
 
+    private string GetSelectedGitAuthMethod() =>
+        _cmbGitAuthMethod.SelectedIndex == 1 ? "Token" : "DeployKey";
+
     private static string ParseOptionCode(string? value, string fallback)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -972,6 +997,7 @@ public partial class MainShellForm : Form
         SetRowVisible(_tblGeneral, _txtBranch, _advancedVisible);
         SetRowVisible(_tblGeneral, _txtComposeFile, _advancedVisible);
         SetRowVisible(_tblGeneral, _txtGitToken, _advancedVisible);
+        SetRowVisible(_tblGeneral, _cmbGitAuthMethod, _advancedVisible);
 
         // SSH (Avanzados)
         SetRowVisible(_tblSsh, _numSshPort, _advancedVisible);
