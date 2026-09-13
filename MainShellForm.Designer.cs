@@ -400,7 +400,7 @@ partial class MainShellForm
         _txtRepoPath.Name = "_txtRepoPath";
         _txtRepoPath.Size = new Size(221, 31);
         _txtRepoPath.TabIndex = 3;
-        _txtRepoPath.Text = "C:\\Repos\\OmniSuite";
+        _txtRepoPath.Text = "C:\\Repos\\HolosCoreOps";
         // 
         // _lblRemoteRepoPath
         // 
@@ -424,7 +424,7 @@ partial class MainShellForm
         _txtRemoteRepoPath.Name = "_txtRemoteRepoPath";
         _txtRemoteRepoPath.Size = new Size(221, 31);
         _txtRemoteRepoPath.TabIndex = 5;
-        _txtRemoteRepoPath.Text = "/root/OmniSuite";
+        _txtRemoteRepoPath.Text = "/root/HolosCoreOps";
         // 
         // _lblBranch
         // 
